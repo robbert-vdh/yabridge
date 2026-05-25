@@ -65,6 +65,11 @@ using Vst3ControlRequest =
                  // we had to move this message to the main `Vst3PluginProxy`
                  // class
                  Vst3PluginProxy::Initialize,
+                 YaARAPlugInEntryPoint::GetFactory,
+                 YaARAPlugInEntryPoint::BindToDocumentController,
+                 YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles,
+                 YaARAFactory::Initialize,
+                 YaARAFactory::Uninitialize,
                  // These are defined in both `IComponent` and `IEditController`
                  Vst3PluginProxy::SetState,
                  Vst3PluginProxy::GetState,

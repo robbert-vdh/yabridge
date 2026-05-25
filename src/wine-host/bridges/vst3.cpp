@@ -219,6 +219,96 @@ void Vst3Bridge::run() {
                 return Vst3PluginProxy::ConstructArgs(instance.object,
                                                       instance_id);
             },
+            [&](const YaARAPlugInEntryPoint::GetFactory& request)
+                -> YaARAPlugInEntryPoint::GetFactory::Response {
+                YaARAPlugInEntryPoint::GetFactoryResponse response{};
+
+                const auto& [instance, _] = get_instance(request.instance_id);
+                Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint> entry_point(
+                    instance.object);
+                if (!entry_point) {
+                    return response;
+                }
+
+                const ARA::ARAFactory* factory = entry_point->getFactory();
+                if (!factory) {
+                    return response;
+                }
+
+                response.supported = true;
+                response.factory = YaARAFactorySnapshot(factory);
+                return response;
+            },
+            [&](const YaARAPlugInEntryPoint::BindToDocumentController&)
+                -> YaARAPlugInEntryPoint::BindToDocumentController::Response {
+                return PrimitiveResponse<native_size_t>(0);
+            },
+            [&](const YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles&)
+                -> YaARAPlugInEntryPoint2::
+                    BindToDocumentControllerWithRoles::Response {
+                return PrimitiveResponse<native_size_t>(0);
+            },
+            [&](const YaARAFactory::Initialize& request)
+                -> YaARAFactory::Initialize::Response {
+                return main_context_
+                    .run_in_context([&]() -> Ack {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                            entry_point(instance.object);
+                        if (!entry_point) {
+                            return Ack{};
+                        }
+
+                        const ARA::ARAFactory* factory =
+                            entry_point->getFactory();
+                        if (!factory ||
+                            !factory->initializeARAWithConfiguration) {
+                            return Ack{};
+                        }
+
+                        if (!request.config.has_config) {
+                            factory->initializeARAWithConfiguration(nullptr);
+                            return Ack{};
+                        }
+
+                        ARA::ARAInterfaceConfiguration config{};
+                        config.structSize =
+                            request.config.struct_size
+                                ? request.config.struct_size
+                                : ARA::kARAInterfaceConfigurationMinSize;
+                        config.desiredApiGeneration =
+                            request.config.desired_api_generation;
+                        config.assertFunctionAddress = nullptr;
+                        factory->initializeARAWithConfiguration(&config);
+
+                        return Ack{};
+                    })
+                    .get();
+            },
+            [&](const YaARAFactory::Uninitialize& request)
+                -> YaARAFactory::Uninitialize::Response {
+                return main_context_
+                    .run_in_context([&]() -> Ack {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                            entry_point(instance.object);
+                        if (!entry_point) {
+                            return Ack{};
+                        }
+
+                        const ARA::ARAFactory* factory =
+                            entry_point->getFactory();
+                        if (!factory || !factory->uninitializeARA) {
+                            return Ack{};
+                        }
+
+                        factory->uninitializeARA();
+                        return Ack{};
+                    })
+                    .get();
+            },
             [&](const Vst3PluginProxy::Destruct& request)
                 -> Vst3PluginProxy::Destruct::Response {
                 unregister_object_instance(request.instance_id);

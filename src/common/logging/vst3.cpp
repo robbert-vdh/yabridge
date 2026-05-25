@@ -697,6 +697,60 @@ bool Vst3Logger::log_request(bool is_host_plugin,
 }
 
 bool Vst3Logger::log_request(bool is_host_plugin,
+                             const YaARAPlugInEntryPoint::GetFactory& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARA::IPlugInEntryPoint::getFactory()";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAPlugInEntryPoint::BindToDocumentController& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARA::IPlugInEntryPoint::bindToDocumentController(";
+        message << "documentControllerRef = 0x" << std::hex
+                << request.document_controller_ref << std::dec << ')';
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles(";
+        message << "documentControllerRef = 0x" << std::hex
+                << request.document_controller_ref << std::dec
+                << ", knownRoles = " << request.known_roles
+                << ", assignedRoles = " << request.assigned_roles << ')';
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                             const YaARAFactory::Initialize& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAFactory::initializeARAWithConfiguration(";
+        if (request.config.has_config) {
+            message << "desiredApiGeneration = "
+                    << request.config.desired_api_generation;
+        } else {
+            message << "null";
+        }
+        message << ')';
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                             const YaARAFactory::Uninitialize& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": ARAFactory::uninitializeARA()";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
                              const YaPluginBase::Terminate& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id << ": IPluginBase::terminate()";
@@ -1453,6 +1507,14 @@ void Vst3Logger::log_response(
     bool is_host_plugin,
     const Vst3PluginProxy::InitializeResponse& response) {
     log_response(is_host_plugin, response.result);
+}
+
+void Vst3Logger::log_response(
+    bool is_host_plugin,
+    const YaARAPlugInEntryPoint::GetFactoryResponse& response) {
+    log_response_base(is_host_plugin, [&](auto& message) {
+        message << (response.supported ? "supported" : "unsupported");
+    });
 }
 
 void Vst3Logger::log_response(

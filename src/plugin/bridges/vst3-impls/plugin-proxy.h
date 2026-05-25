@@ -17,9 +17,12 @@
 #pragma once
 
 #include <map>
+#include <memory>
 
 #include "../vst3.h"
 #include "plug-view-proxy.h"
+
+class AraFactoryProxy;
 
 /**
  * Here we pass though all function calls made by the host to the Windows VST3
@@ -77,9 +80,8 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     void clear_caches() noexcept;
 
     // From `ARA::IPlugInEntryPoint`
-    // NOTE: Not yet proxied across the bridge. `queryInterface()` will not
-    // expose this interface until a full implementation is in place. These
-    // stubs exist solely to satisfy the abstract base class.
+    // NOTE: These are now partially proxied to expose `getFactory()`, while
+    //       document controller proxying is still pending.
     const ARA::ARAFactory* PLUGIN_API getFactory() override;
     ARA_DEPRECATED(2_0_Draft)
     const ARA::ARAPlugInExtensionInstance* PLUGIN_API
@@ -87,7 +89,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
         ARA::ARADocumentControllerRef documentControllerRef) override;
 
     // From `ARA::IPlugInEntryPoint2`
-    // NOTE: Same as above — detection only, not yet proxied.
+    // NOTE: Document controller proxying is still pending.
     const ARA::ARAPlugInExtensionInstance* PLUGIN_API
     bindToDocumentControllerWithRoles(
         ARA::ARADocumentControllerRef documentControllerRef,
@@ -450,6 +452,8 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * but for the sake of correctness we will.
      */
     Steinberg::IPtr<Steinberg::FUnknown> host_context_;
+
+    std::unique_ptr<AraFactoryProxy> ara_factory_proxy_;
 
     /**
      * We'll periodically synchronize the Wine host's audio thread priority with

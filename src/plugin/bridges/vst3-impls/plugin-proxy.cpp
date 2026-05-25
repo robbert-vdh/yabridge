@@ -16,9 +16,6 @@
 
 #include "plugin-proxy.h"
 
-#include <atomic>
-#include <cstring>
-
 #include <pluginterfaces/vst/ivstmidicontrollers.h>
 
 #include "plug-view-proxy.h"
@@ -41,15 +38,122 @@ constexpr char other_instance_message_id[] = "yabridge_other_instance";
 constexpr char other_instance_pointer_attribute[] = "other_proxy_ptr";
 
 namespace {
-bool iid_matches_raw(const Steinberg::TUID iid,
-                     uint32_t a,
-                     uint32_t b,
-                     uint32_t c,
-                     uint32_t d) {
-    Steinberg::TUID uid_tuid{};
-    Steinberg::FUID(a, b, c, d).toTUID(uid_tuid);
-    return std::memcmp(iid, uid_tuid, sizeof(Steinberg::TUID)) == 0;
-}
+class AraFactoryProxy {
+   public:
+    AraFactoryProxy(Vst3PluginBridge& bridge,
+                    native_size_t instance_id,
+                    YaARAFactorySnapshot snapshot)
+        : bridge_(bridge),
+          instance_id_(instance_id),
+          snapshot_(std::move(snapshot)) {
+        factory_.structSize = snapshot_.struct_size ? snapshot_.struct_size
+                                 : ARA::kARAFactoryMinSize;
+        factory_.lowestSupportedApiGeneration =
+            snapshot_.lowest_supported_api_generation;
+        factory_.highestSupportedApiGeneration =
+            snapshot_.highest_supported_api_generation;
+        factory_.factoryID =
+            snapshot_.factory_id.empty() ? nullptr : snapshot_.factory_id.c_str();
+        factory_.initializeARAWithConfiguration = initialize;
+        factory_.uninitializeARA = uninitialize;
+        factory_.plugInName = snapshot_.plug_in_name.empty()
+                                  ? nullptr
+                                  : snapshot_.plug_in_name.c_str();
+        factory_.manufacturerName =
+            snapshot_.manufacturer_name.empty()
+                ? nullptr
+                : snapshot_.manufacturer_name.c_str();
+        factory_.informationURL = snapshot_.information_url.empty()
+                                      ? nullptr
+                                      : snapshot_.information_url.c_str();
+        factory_.version =
+            snapshot_.version.empty() ? nullptr : snapshot_.version.c_str();
+        factory_.createDocumentControllerWithDocument =
+            create_document_controller_with_document;
+        factory_.documentArchiveID = snapshot_.document_archive_id.empty()
+                                         ? nullptr
+                                         : snapshot_.document_archive_id.c_str();
+
+        compatible_document_archive_ids_.reserve(
+            snapshot_.compatible_document_archive_ids.size());
+        for (const auto& id : snapshot_.compatible_document_archive_ids) {
+            compatible_document_archive_ids_.push_back(id.c_str());
+        }
+        factory_.compatibleDocumentArchiveIDsCount =
+            static_cast<ARA::ARASize>(
+                compatible_document_archive_ids_.size());
+        factory_.compatibleDocumentArchiveIDs =
+            compatible_document_archive_ids_.empty()
+                ? nullptr
+                : compatible_document_archive_ids_.data();
+
+        analyzeable_content_types_ =
+            snapshot_.analyzeable_content_types;
+        factory_.analyzeableContentTypesCount =
+            static_cast<ARA::ARASize>(analyzeable_content_types_.size());
+        factory_.analyzeableContentTypes = analyzeable_content_types_.empty()
+                                               ? nullptr
+                                               : analyzeable_content_types_.data();
+
+        factory_.supportedPlaybackTransformationFlags =
+            snapshot_.supported_playback_transformation_flags;
+        factory_.supportsStoringAudioFileChunks =
+            snapshot_.supports_storing_audio_file_chunks;
+        factory_.supportsSampleBasedAudioSources =
+            snapshot_.supports_sample_based_audio_sources;
+        factory_.supportsContentOnlyAudioSources =
+            snapshot_.supports_content_only_audio_sources;
+        factory_.requiresPresetAudioSources =
+            snapshot_.requires_preset_audio_sources;
+
+        active_proxy_ = this;
+    }
+
+    const ARA::ARAFactory* get() const noexcept { return &factory_; }
+
+   private:
+    static void ARA_CALL initialize(const ARA::ARAInterfaceConfiguration* config) {
+        if (!active_proxy_) {
+            return;
+        }
+
+        active_proxy_->bridge_.send_message(YaARAFactory::Initialize{
+            .instance_id = active_proxy_->instance_id_,
+            .config = YaARAFactoryConfig(config),
+        });
+    }
+
+    static void ARA_CALL uninitialize() {
+        if (!active_proxy_) {
+            return;
+        }
+
+        active_proxy_->bridge_.send_message(
+            YaARAFactory::Uninitialize{.instance_id = active_proxy_->instance_id_});
+    }
+
+    static const ARA::ARADocumentControllerInstance* ARA_CALL
+    create_document_controller_with_document(
+        const ARA::ARADocumentControllerHostInstance*,
+        const ARA::ARADocumentProperties*) {
+        if (active_proxy_) {
+            active_proxy_->bridge_.logger_.log(
+                "WARNING: ARA document controller proxying is not yet "
+                "implemented");
+        }
+
+        return nullptr;
+    }
+
+    static inline AraFactoryProxy* active_proxy_ = nullptr;
+
+    Vst3PluginBridge& bridge_;
+    native_size_t instance_id_;
+    YaARAFactorySnapshot snapshot_;
+    std::vector<const char*> compatible_document_archive_ids_;
+    std::vector<ARA::ARAContentType> analyzeable_content_types_;
+    ARA::ARAFactory factory_{};
+};
 }  // namespace
 
 Vst3PluginProxyImpl::ContextMenu::ContextMenu(
@@ -73,32 +177,6 @@ Vst3PluginProxyImpl::~Vst3PluginProxyImpl() noexcept {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
-    static std::atomic_bool logged_ara_entry_point_legacy{false};
-    static std::atomic_bool logged_ara_entry_point2_agreements{false};
-    static std::atomic_bool logged_ara_entry_point2_alt{false};
-
-    if (!logged_ara_entry_point_legacy.load(std::memory_order_relaxed) &&
-        iid_matches_raw(_iid, 0x3D4BD6B5, 0x913A4FD2, 0xA886E768, 0xA5EB92C1) &&
-        !logged_ara_entry_point_legacy.exchange(true,
-                                                std::memory_order_relaxed)) {
-        bridge_.logger_.log(
-            "DEBUG: Host queried ARA::IPlugInEntryPoint legacy IID");
-    }
-    if (!logged_ara_entry_point2_agreements.load(std::memory_order_relaxed) &&
-        iid_matches_raw(_iid, 0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0) &&
-        !logged_ara_entry_point2_agreements.exchange(
-            true, std::memory_order_relaxed)) {
-        bridge_.logger_.log(
-            "DEBUG: Host queried ARA::IPlugInEntryPoint2 agreements IID");
-    }
-    if (!logged_ara_entry_point2_alt.load(std::memory_order_relaxed) &&
-        iid_matches_raw(_iid, 0x8683B01F, 0x7B354F70, 0xA2651DEC, 0x353AF4FF) &&
-        !logged_ara_entry_point2_alt.exchange(true,
-                                              std::memory_order_relaxed)) {
-        bridge_.logger_.log(
-            "DEBUG: Host queried ARA::IPlugInEntryPoint2 alternate IID");
-    }
-
     const tresult result = Vst3PluginProxy::queryInterface(_iid, obj);
     bridge_.logger_.log_query_interface("In FUnknown::queryInterface()", result,
                                         Steinberg::FUID::fromTUID(_iid));
@@ -140,10 +218,19 @@ void Vst3PluginProxyImpl::clear_caches() noexcept {
 // `YaARAPlugInEntryPoint2`.
 
 const ARA::ARAFactory* PLUGIN_API Vst3PluginProxyImpl::getFactory() {
-    bridge_.logger_.log(
-        "WARNING: Unexpected call to 'ARA::IPlugInEntryPoint::getFactory()' — "
-        "ARA is not yet proxied");
-    return nullptr;
+    const YaARAPlugInEntryPoint::GetFactoryResponse response =
+        bridge_.send_message(
+            YaARAPlugInEntryPoint::GetFactory{.instance_id = instance_id()});
+    if (!response.supported) {
+        return nullptr;
+    }
+
+    if (!ara_factory_proxy_) {
+        ara_factory_proxy_ = std::make_unique<AraFactoryProxy>(
+            bridge_, instance_id(), response.factory);
+    }
+
+    return ara_factory_proxy_->get();
 }
 
 #pragma GCC diagnostic push
@@ -154,7 +241,7 @@ Vst3PluginProxyImpl::bindToDocumentController(
     bridge_.logger_.log(
         "WARNING: Unexpected call to "
         "'ARA::IPlugInEntryPoint::bindToDocumentController()' — "
-        "ARA is not yet proxied");
+        "ARA document controller proxying is not yet implemented");
     return nullptr;
 }
 #pragma GCC diagnostic pop
@@ -168,7 +255,7 @@ Vst3PluginProxyImpl::bindToDocumentControllerWithRoles(
     bridge_.logger_.log(
         "WARNING: Unexpected call to "
         "'ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles()' — "
-        "ARA is not yet proxied");
+        "ARA document controller proxying is not yet implemented");
     return nullptr;
 }
 

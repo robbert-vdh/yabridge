@@ -67,6 +67,15 @@ class Vst3Logger {
     bool log_request(bool is_host_plugin, const Vst3PluginProxy::Construct&);
     bool log_request(bool is_host_plugin, const Vst3PluginProxy::Destruct&);
     bool log_request(bool is_host_plugin, const Vst3PluginProxy::Initialize&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAPlugInEntryPoint::GetFactory&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAPlugInEntryPoint::BindToDocumentController&);
+    bool log_request(
+        bool is_host_plugin,
+        const YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles&);
+    bool log_request(bool is_host_plugin, const YaARAFactory::Initialize&);
+    bool log_request(bool is_host_plugin, const YaARAFactory::Uninitialize&);
     bool log_request(bool is_host_plugin, const Vst3PluginProxy::SetState&);
     bool log_request(bool is_host_plugin, const Vst3PluginProxy::GetState&);
     bool log_request(
@@ -267,6 +276,8 @@ class Vst3Logger {
         const std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult>&);
     void log_response(bool is_host_plugin,
                       const Vst3PluginProxy::InitializeResponse&);
+    void log_response(bool is_host_plugin,
+                      const YaARAPlugInEntryPoint::GetFactoryResponse&);
     void log_response(bool is_host_plugin,
                       const Vst3PluginProxy::GetStateResponse&);
     void log_response(bool is_host_plugin,
