@@ -22,8 +22,172 @@
 #include "../vst3.h"
 #include "plug-view-proxy.h"
 
-class AraFactoryProxy;
 class AraPlugInExtensionProxy;
+
+/**
+ * Proxies the ARA factory's `createDocumentControllerWithDocument()` callback
+ * and owns the `ARAFactory` struct that is returned to the host. Defined here
+ * (rather than in the .cpp) so that `vst3.cpp`'s `YaARAHostCallbacks` handlers
+ * can access `linux_host_instance_` and `document_controller_instance_` without
+ * requiring a complete type from a separate translation unit.
+ */
+class AraFactoryProxy {
+   public:
+    AraFactoryProxy(Vst3PluginBridge& bridge,
+                    native_size_t instance_id,
+                    YaARAFactorySnapshot snapshot)
+        : bridge_(bridge),
+          instance_id_(instance_id),
+          snapshot_(std::move(snapshot)) {
+        factory_.structSize =
+            snapshot_.struct_size
+                ? static_cast<ARA::ARASize>(snapshot_.struct_size)
+                : static_cast<ARA::ARASize>(ARA::kARAFactoryMinSize);
+        factory_.lowestSupportedApiGeneration =
+            snapshot_.lowest_supported_api_generation;
+        factory_.highestSupportedApiGeneration =
+            snapshot_.highest_supported_api_generation;
+        factory_.factoryID = snapshot_.factory_id.empty()
+                                 ? nullptr
+                                 : snapshot_.factory_id.c_str();
+        factory_.initializeARAWithConfiguration = initialize;
+        factory_.uninitializeARA = uninitialize;
+        factory_.plugInName = snapshot_.plug_in_name.empty()
+                                  ? nullptr
+                                  : snapshot_.plug_in_name.c_str();
+        factory_.manufacturerName = snapshot_.manufacturer_name.empty()
+                                        ? nullptr
+                                        : snapshot_.manufacturer_name.c_str();
+        factory_.informationURL = snapshot_.information_url.empty()
+                                      ? nullptr
+                                      : snapshot_.information_url.c_str();
+        factory_.version =
+            snapshot_.version.empty() ? nullptr : snapshot_.version.c_str();
+        factory_.createDocumentControllerWithDocument =
+            create_document_controller_with_document;
+        factory_.documentArchiveID = snapshot_.document_archive_id.empty()
+                                         ? nullptr
+                                         : snapshot_.document_archive_id.c_str();
+
+        compatible_document_archive_ids_.reserve(
+            snapshot_.compatible_document_archive_ids.size());
+        for (const auto& id : snapshot_.compatible_document_archive_ids) {
+            compatible_document_archive_ids_.push_back(id.c_str());
+        }
+        factory_.compatibleDocumentArchiveIDsCount =
+            static_cast<ARA::ARASize>(compatible_document_archive_ids_.size());
+        factory_.compatibleDocumentArchiveIDs =
+            compatible_document_archive_ids_.empty()
+                ? nullptr
+                : compatible_document_archive_ids_.data();
+
+        analyzeable_content_types_ = snapshot_.analyzeable_content_types;
+        factory_.analyzeableContentTypesCount =
+            static_cast<ARA::ARASize>(analyzeable_content_types_.size());
+        factory_.analyzeableContentTypes =
+            analyzeable_content_types_.empty()
+                ? nullptr
+                : analyzeable_content_types_.data();
+
+        factory_.supportedPlaybackTransformationFlags =
+            snapshot_.supported_playback_transformation_flags;
+        factory_.supportsStoringAudioFileChunks =
+            snapshot_.supports_storing_audio_file_chunks;
+        factory_.supportsSampleBasedAudioSources =
+            snapshot_.supports_sample_based_audio_sources;
+        factory_.supportsContentOnlyAudioSources =
+            snapshot_.supports_content_only_audio_sources;
+        factory_.requiresPresetAudioSources =
+            snapshot_.requires_preset_audio_sources;
+
+        active_proxy_ = this;
+    }
+
+    const ARA::ARAFactory* get() const noexcept { return &factory_; }
+
+    // Public so vst3.cpp's YaARAHostCallbacks handlers can read them directly.
+
+    // The ARADocumentControllerInstance returned by the Windows plugin's
+    // factory. Wine-side pointer; remains valid for the lifetime of the
+    // document controller.
+    const ARA::ARADocumentControllerInstance* document_controller_instance_ =
+        nullptr;
+    // The Linux-side ARADocumentControllerHostInstance pointer passed by Carla.
+    // Stored so the YaARAHostCallbacks handlers can call back into Carla's
+    // function pointer tables.
+    const ARA::ARADocumentControllerHostInstance* linux_host_instance_ =
+        nullptr;
+
+   private:
+    static void ARA_CALL
+    initialize(const ARA::ARAInterfaceConfiguration* config) {
+        if (!active_proxy_) {
+            return;
+        }
+        active_proxy_->bridge_.send_message(YaARAFactory::Initialize{
+            .instance_id = active_proxy_->instance_id_,
+            .config = YaARAFactoryConfig(config),
+        });
+    }
+
+    static void ARA_CALL uninitialize() {
+        if (!active_proxy_) {
+            return;
+        }
+        active_proxy_->bridge_.send_message(
+            YaARAFactory::Uninitialize{
+                .instance_id = active_proxy_->instance_id_});
+    }
+
+    static const ARA::ARADocumentControllerInstance* ARA_CALL
+    create_document_controller_with_document(
+        const ARA::ARADocumentControllerHostInstance* host_instance,
+        const ARA::ARADocumentProperties* properties) {
+        if (!active_proxy_) {
+            return nullptr;
+        }
+
+        active_proxy_->bridge_.logger_.log(
+            "NOTE: ARA factory createDocumentControllerWithDocument() called "
+            "— forwarding to Wine host via IPC");
+
+        const std::string doc_name =
+            (properties && properties->name) ? properties->name : "";
+
+        active_proxy_->linux_host_instance_ = host_instance;
+
+        const native_size_t result =
+            active_proxy_->bridge_.send_message(
+                YaARAFactory::CreateDocumentController{
+                    .instance_id = active_proxy_->instance_id_,
+                    .host_instance_ptr =
+                        reinterpret_cast<native_size_t>(host_instance),
+                    .document_name = doc_name,
+                });
+
+        if (!result) {
+            active_proxy_->bridge_.logger_.log(
+                "WARNING: createDocumentControllerWithDocument() — Wine host "
+                "returned null ARADocumentControllerInstance");
+            return nullptr;
+        }
+
+        active_proxy_->document_controller_instance_ =
+            reinterpret_cast<const ARA::ARADocumentControllerInstance*>(
+                static_cast<uintptr_t>(result));
+
+        return active_proxy_->document_controller_instance_;
+    }
+
+    static inline AraFactoryProxy* active_proxy_ = nullptr;
+
+    Vst3PluginBridge& bridge_;
+    native_size_t instance_id_;
+    YaARAFactorySnapshot snapshot_;
+    std::vector<const char*> compatible_document_archive_ids_;
+    std::vector<ARA::ARAContentType> analyzeable_content_types_;
+    ARA::ARAFactory factory_{};
+};
 
 /**
  * Here we pass though all function calls made by the host to the Windows VST3
