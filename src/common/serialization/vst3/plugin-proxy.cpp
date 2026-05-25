@@ -108,6 +108,14 @@ Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
             return ::Steinberg ::kResultOk;
         }
     }
+    if (YaARAPlugInEntryPoint::supported()) {
+        QUERY_INTERFACE(_iid, obj, ARA::IPlugInEntryPoint::iid,
+                        ARA::IPlugInEntryPoint)
+    }
+    if (YaARAPlugInEntryPoint2::supported()) {
+        QUERY_INTERFACE(_iid, obj, ARA::IPlugInEntryPoint2::iid,
+                        ARA::IPlugInEntryPoint2)
+    }
     if (YaAudioPresentationLatency::supported()) {
         QUERY_INTERFACE(_iid, obj,
                         Steinberg::Vst::IAudioPresentationLatency::iid,

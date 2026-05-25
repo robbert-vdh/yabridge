@@ -17,8 +17,6 @@
 #include "vst3.h"
 
 #include <bitset>
-#include <iomanip>
-#include <sstream>
 
 #include "vst3-impls/component-handler-proxy.h"
 #include "vst3-impls/connection-point-proxy.h"
@@ -214,50 +212,6 @@ void Vst3Bridge::run() {
 
                 const size_t instance_id = register_object_instance(object);
                 const auto& [instance, _] = get_instance(instance_id);
-
-                // TEMP: ARA interface detection debug logging.
-                {
-                    Steinberg::TUID ara_iid{};
-                    ARA::IPlugInEntryPoint::iid.toTUID(ara_iid);
-
-                    std::ostringstream iid_bytes;
-                    iid_bytes << "DEBUG: ARA::IPlugInEntryPoint::iid bytes:";
-                    for (size_t i = 0; i < sizeof(ara_iid); ++i) {
-                        iid_bytes << " " << std::uppercase << std::hex
-                                  << std::setw(2) << std::setfill('0')
-                                  << static_cast<int>(
-                                         static_cast<unsigned char>(
-                                             ara_iid[i]));
-                    }
-                    logger_.log(iid_bytes.str());
-
-                    ARA::IPlugInEntryPoint* ara_entry_point = nullptr;
-                    const tresult qi_result =
-                        instance.object->queryInterface(
-                            ara_iid,
-                            reinterpret_cast<void**>(&ara_entry_point));
-
-                    std::ostringstream qi_message;
-                    qi_message
-                        << "DEBUG: ARA::IPlugInEntryPoint::queryInterface "
-                           "result: "
-                        << (qi_result == Steinberg::kResultOk
-                                ? "kResultOk"
-                                : "not kResultOk")
-                        << " (" << qi_result << ")";
-                    logger_.log(qi_message.str());
-
-                    if (ara_entry_point) {
-                        ara_entry_point->release();
-                    }
-
-                    Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
-                        ara_entry_point_ptr(instance.object);
-                    logger_.log(
-                        std::string(
-                            "DEBUG: ARA::IPlugInEntryPoint FUnknownPtr: ") +
-                        (ara_entry_point_ptr ? "success" : "failed"));
-                }
 
                 // This is where the magic happens. Here we deduce which
                 // interfaces are supported by this object so we can create
