@@ -133,15 +133,47 @@ class AraFactoryProxy {
 
     static const ARA::ARADocumentControllerInstance* ARA_CALL
     create_document_controller_with_document(
-        const ARA::ARADocumentControllerHostInstance*,
-        const ARA::ARADocumentProperties*) {
-        if (active_proxy_) {
-            active_proxy_->bridge_.logger_.log(
-                "WARNING: ARA document controller proxying is not yet "
-                "implemented");
+        const ARA::ARADocumentControllerHostInstance* host_instance,
+        const ARA::ARADocumentProperties* properties) {
+        if (!active_proxy_) {
+            return nullptr;
         }
 
-        return nullptr;
+        active_proxy_->bridge_.logger_.log(
+            "NOTE: ARA factory createDocumentControllerWithDocument() called "
+            "— forwarding to Wine host via IPC");
+
+        const std::string doc_name =
+            (properties && properties->name) ? properties->name : "";
+
+        // Store the Linux-side host instance pointer so the
+        // YaARAHostCallbacks handlers can call back into Carla.
+        active_proxy_->linux_host_instance_ = host_instance;
+
+        const native_size_t result =
+            active_proxy_->bridge_.send_message(
+                YaARAFactory::CreateDocumentController{
+                    .instance_id = active_proxy_->instance_id_,
+                    .host_instance_ptr = reinterpret_cast<native_size_t>(
+                        host_instance),
+                    .document_name = doc_name,
+                });
+
+        if (!result) {
+            active_proxy_->bridge_.logger_.log(
+                "WARNING: createDocumentControllerWithDocument() — Wine host "
+                "returned null ARADocumentControllerInstance");
+            return nullptr;
+        }
+
+        // The response is the Wine-side ARADocumentControllerInstance pointer
+        // returned by the Windows plugin. Store it so bindToDocumentController
+        // can pass the correct ARADocumentControllerRef.
+        active_proxy_->document_controller_instance_ =
+            reinterpret_cast<const ARA::ARADocumentControllerInstance*>(
+                static_cast<uintptr_t>(result));
+
+        return active_proxy_->document_controller_instance_;
     }
 
     static inline AraFactoryProxy* active_proxy_ = nullptr;
@@ -152,6 +184,16 @@ class AraFactoryProxy {
     std::vector<const char*> compatible_document_archive_ids_;
     std::vector<ARA::ARAContentType> analyzeable_content_types_;
     ARA::ARAFactory factory_{};
+    // The ARADocumentControllerInstance returned by the Windows plugin's
+    // factory. This is a Wine-side pointer and remains valid for the lifetime
+    // of the document controller.
+    const ARA::ARADocumentControllerInstance* document_controller_instance_ =
+        nullptr;
+    // The Linux-side ARADocumentControllerHostInstance pointer passed by Carla.
+    // Stored so the YaARAHostCallbacks handlers on the plugin side can call
+    // back into Carla's function pointer tables.
+    const ARA::ARADocumentControllerHostInstance* linux_host_instance_ =
+        nullptr;
 };
 
 Vst3PluginProxyImpl::ContextMenu::ContextMenu(
@@ -235,16 +277,36 @@ const ARA::ARAFactory* PLUGIN_API Vst3PluginProxyImpl::getFactory() {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 const ARA::ARAPlugInExtensionInstance* PLUGIN_API
 Vst3PluginProxyImpl::bindToDocumentController(
-    ARA::ARADocumentControllerRef documentControllerRef) {
+    ARA::ARADocumentControllerRef /*documentControllerRef*/) {
     bridge_.logger_.log(
         "NOTE: ARA::IPlugInEntryPoint::bindToDocumentController() called — "
         "forwarding to Windows plugin via IPC");
 
+    // The documentControllerRef from Carla is a Linux-side pointer that is
+    // invalid in the Wine process. The Windows plugin's factory already
+    // returned a Wine-side ARADocumentControllerInstance via
+    // createDocumentControllerWithDocument(); use its documentControllerRef
+    // instead, which is the valid Wine-side handle the plugin expects.
+    const native_size_t wine_ref =
+        (ara_factory_proxy_ &&
+         ara_factory_proxy_->document_controller_instance_)
+            ? reinterpret_cast<native_size_t>(
+                  ara_factory_proxy_->document_controller_instance_
+                      ->documentControllerRef)
+            : 0;
+
+    if (!wine_ref) {
+        bridge_.logger_.log(
+            "WARNING: bindToDocumentController() — no Wine-side document "
+            "controller available (createDocumentControllerWithDocument not "
+            "yet called or failed)");
+        return nullptr;
+    }
+
     const native_size_t result =
         bridge_.send_message(YaARAPlugInEntryPoint::BindToDocumentController{
             .instance_id = instance_id(),
-            .document_controller_ref = reinterpret_cast<native_size_t>(
-                documentControllerRef),
+            .document_controller_ref = wine_ref,
         });
 
     if (!result) {
@@ -266,18 +328,35 @@ Vst3PluginProxyImpl::bindToDocumentController(
 // From `ARA::IPlugInEntryPoint2`
 const ARA::ARAPlugInExtensionInstance* PLUGIN_API
 Vst3PluginProxyImpl::bindToDocumentControllerWithRoles(
-    ARA::ARADocumentControllerRef documentControllerRef,
+    ARA::ARADocumentControllerRef /*documentControllerRef*/,
     ARA::ARAPlugInInstanceRoleFlags knownRoles,
     ARA::ARAPlugInInstanceRoleFlags assignedRoles) {
     bridge_.logger_.log(
         "NOTE: ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles() "
         "called — forwarding to Windows plugin via IPC");
 
+    // Same as bindToDocumentController: use the Wine-side ref from the
+    // document controller instance created by the factory, not the Linux
+    // pointer from Carla.
+    const native_size_t wine_ref =
+        (ara_factory_proxy_ &&
+         ara_factory_proxy_->document_controller_instance_)
+            ? reinterpret_cast<native_size_t>(
+                  ara_factory_proxy_->document_controller_instance_
+                      ->documentControllerRef)
+            : 0;
+
+    if (!wine_ref) {
+        bridge_.logger_.log(
+            "WARNING: bindToDocumentControllerWithRoles() — no Wine-side "
+            "document controller available");
+        return nullptr;
+    }
+
     const native_size_t result = bridge_.send_message(
         YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles{
             .instance_id = instance_id(),
-            .document_controller_ref = reinterpret_cast<native_size_t>(
-                documentControllerRef),
+            .document_controller_ref = wine_ref,
             .known_roles = knownRoles,
             .assigned_roles = assignedRoles,
         });

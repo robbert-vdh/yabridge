@@ -23,6 +23,7 @@
 #include "plug-view-proxy.h"
 
 class AraFactoryProxy;
+class AraPlugInExtensionProxy;
 
 /**
  * Here we pass though all function calls made by the host to the Windows VST3
@@ -78,6 +79,15 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * @see function_result_cache_
      */
     void clear_caches() noexcept;
+
+    /**
+     * Return the ARA factory proxy for this instance, if one has been created.
+     * Used by the YaARAHostCallbacks handlers to access the stored Linux-side
+     * host instance pointer for forwarding callbacks to Carla.
+     */
+    AraFactoryProxy* ara_factory_proxy() const noexcept {
+        return ara_factory_proxy_.get();
+    }
 
     // From `ARA::IPlugInEntryPoint`
     // NOTE: These are now partially proxied to expose `getFactory()`, while

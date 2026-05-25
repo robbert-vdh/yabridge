@@ -147,6 +147,190 @@ struct YaARAFactory {
             s.value8b(instance_id);
         }
     };
+
+    /**
+     * Message to forward `ARAFactory::createDocumentControllerWithDocument()`
+     * to the Wine host. The host instance pointer from Carla is passed as an
+     * opaque integer; the wine host creates a `WineARADocumentControllerHostInstance`
+     * proxy and calls the real Windows plugin factory with it.
+     *
+     * The response is the opaque `ARADocumentControllerRef` returned by the
+     * Windows plugin (a Wine-side pointer), which is then stored and passed
+     * back to `bindToDocumentController[WithRoles]()`.
+     */
+    struct CreateDocumentController {
+        using Response = PrimitiveResponse<native_size_t>;
+
+        native_size_t instance_id;
+        // The Linux-side ARADocumentControllerHostInstance pointer from Carla,
+        // passed as an opaque integer for the wine host to capture.
+        native_size_t host_instance_ptr;
+        // Serialized document properties (name only for now).
+        std::string document_name;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(host_instance_ptr);
+            s.text1b(document_name, 1024);
+        }
+    };
+};
+
+/**
+ * Messages for ARA host callbacks forwarded from the Wine-side
+ * `WineARADocumentControllerHostInstance` stubs back to the Linux host (Carla).
+ *
+ * Each message carries the opaque Linux-side host ref so Carla can route the
+ * call to the correct internal object.
+ */
+struct YaARAHostCallbacks {
+    // ------------------------------------------------------------------
+    // ARAAudioAccessControllerInterface
+    // ------------------------------------------------------------------
+
+    struct CreateAudioReaderForSource {
+        using Response = PrimitiveResponse<native_size_t>;
+
+        native_size_t instance_id;
+        native_size_t audio_access_controller_host_ref;
+        native_size_t audio_source_host_ref;
+        ARA::ARABool use_64bit_samples;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(audio_access_controller_host_ref);
+            s.value8b(audio_source_host_ref);
+            s.value4b(use_64bit_samples);
+        }
+    };
+
+    struct ReadAudioSamples {
+        using Response = PrimitiveResponse<ARA::ARABool>;
+
+        native_size_t instance_id;
+        native_size_t audio_access_controller_host_ref;
+        native_size_t audio_reader_host_ref;
+        ARA::ARASamplePosition sample_position;
+        ARA::ARASampleCount samples_per_channel;
+        // NOTE: Audio buffer data is not forwarded here — this stub returns
+        // kARAFalse (I/O error) so the plugin falls back gracefully. Full
+        // audio proxying requires shared memory and is deferred.
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(audio_access_controller_host_ref);
+            s.value8b(audio_reader_host_ref);
+            s.value8b(sample_position);
+            s.value8b(samples_per_channel);
+        }
+    };
+
+    struct DestroyAudioReader {
+        using Response = Ack;
+
+        native_size_t instance_id;
+        native_size_t audio_access_controller_host_ref;
+        native_size_t audio_reader_host_ref;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(audio_access_controller_host_ref);
+            s.value8b(audio_reader_host_ref);
+        }
+    };
+
+    // ------------------------------------------------------------------
+    // ARAArchivingControllerInterface
+    // ------------------------------------------------------------------
+
+    struct GetArchiveSize {
+        using Response = PrimitiveResponse<uint64_t>;
+
+        native_size_t instance_id;
+        native_size_t archiving_controller_host_ref;
+        native_size_t archive_reader_host_ref;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(archiving_controller_host_ref);
+            s.value8b(archive_reader_host_ref);
+        }
+    };
+
+    struct ReadBytesFromArchive {
+        using Response = PrimitiveResponse<ARA::ARABool>;
+
+        native_size_t instance_id;
+        native_size_t archiving_controller_host_ref;
+        native_size_t archive_reader_host_ref;
+        uint64_t position;
+        uint64_t length;
+        std::vector<uint8_t> buffer;  // filled on response side
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(archiving_controller_host_ref);
+            s.value8b(archive_reader_host_ref);
+            s.value8b(position);
+            s.value8b(length);
+            s.container1b(buffer, 64 * 1024 * 1024);  // 64 MiB max
+        }
+    };
+
+    struct WriteBytesToArchive {
+        using Response = PrimitiveResponse<ARA::ARABool>;
+
+        native_size_t instance_id;
+        native_size_t archiving_controller_host_ref;
+        native_size_t archive_writer_host_ref;
+        uint64_t position;
+        std::vector<uint8_t> buffer;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(archiving_controller_host_ref);
+            s.value8b(archive_writer_host_ref);
+            s.value8b(position);
+            s.container1b(buffer, 64 * 1024 * 1024);
+        }
+    };
+
+    struct NotifyDocumentArchivingProgress {
+        using Response = Ack;
+
+        native_size_t instance_id;
+        native_size_t archiving_controller_host_ref;
+        float value;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(archiving_controller_host_ref);
+            s.value4b(value);
+        }
+    };
+
+    struct NotifyDocumentUnarchivingProgress {
+        using Response = Ack;
+
+        native_size_t instance_id;
+        native_size_t archiving_controller_host_ref;
+        float value;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(archiving_controller_host_ref);
+            s.value4b(value);
+        }
+    };
 };
 
 /**
