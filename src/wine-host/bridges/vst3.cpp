@@ -487,71 +487,99 @@ void Vst3Bridge::run() {
                     std::promise<bool> created_promise;
                     auto created_future = created_promise.get_future();
 
-                    Win32Thread create_thread([&]() {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                    // Melodyne's createDocumentControllerWithDocument
+                    // initialization path consumes nearly 1MB of stack.
+                    // We spawn a dedicated thread with an 8MB stack to give
+                    // it enough room. Win32Thread uses the PE default (1MB)
+                    // which is not enough, so we call CreateThread directly.
+                    auto create_fn = fu2::unique_function<void()>(
+                        [&, promise = std::move(created_promise)]() mutable {
+                            const auto& [instance, _] =
+                                get_instance(request.instance_id);
 
-                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
-                            entry_point(instance.object);
-                        if (!entry_point) {
-                            created_promise.set_value(false);
-                            return;
-                        }
+                            Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                                entry_point(instance.object);
+                            if (!entry_point) {
+                                promise.set_value(false);
+                                return;
+                            }
 
-                        const ARA::ARAFactory* factory =
-                            entry_point->getFactory();
-                        if (!factory ||
-                            !factory->createDocumentControllerWithDocument) {
-                            logger_.log(
-                                "WARNING: BindToDocumentController: "
-                                "factory has no "
-                                "createDocumentControllerWithDocument");
-                            created_promise.set_value(false);
-                            return;
-                        }
+                            const ARA::ARAFactory* factory =
+                                entry_point->getFactory();
+                            if (!factory ||
+                                !factory
+                                     ->createDocumentControllerWithDocument) {
+                                logger_.log(
+                                    "WARNING: BindToDocumentController: "
+                                    "factory has no "
+                                    "createDocumentControllerWithDocument");
+                                promise.set_value(false);
+                                return;
+                            }
 
-                        const auto* linux_host_instance =
-                            reinterpret_cast<
-                                const ARA::ARADocumentControllerHostInstance*>(
-                                static_cast<uintptr_t>(
-                                    request.document_controller_ref));
+                            const auto* linux_host_instance =
+                                reinterpret_cast<
+                                    const ARA::
+                                        ARADocumentControllerHostInstance*>(
+                                    static_cast<uintptr_t>(
+                                        request.document_controller_ref));
 
-                        instance.ara_document_controller_host_instance =
-                            std::make_unique<
-                                WineARADocumentControllerHostInstance>(
-                                linux_host_instance,
-                                request.instance_id,
-                                *this);
+                            instance.ara_document_controller_host_instance =
+                                std::make_unique<
+                                    WineARADocumentControllerHostInstance>(
+                                    linux_host_instance,
+                                    request.instance_id,
+                                    *this);
 
-                        ARA::ARADocumentProperties props{};
-                        props.structSize = static_cast<ARA::ARASize>(
-                            ARA_IMPLEMENTED_STRUCT_SIZE(ARADocumentProperties,
-                                                        name));
-                        props.name = nullptr;
+                            ARA::ARADocumentProperties props{};
+                            props.structSize = static_cast<ARA::ARASize>(
+                                ARA_IMPLEMENTED_STRUCT_SIZE(
+                                    ARADocumentProperties, name));
+                            props.name = nullptr;
 
-                        const ARA::ARADocumentControllerInstance* ctrl =
-                            factory->createDocumentControllerWithDocument(
+                            const ARA::ARADocumentControllerInstance* ctrl =
+                                factory->createDocumentControllerWithDocument(
+                                    instance
+                                        .ara_document_controller_host_instance
+                                        ->get(),
+                                    &props);
+
+                            if (!ctrl) {
+                                logger_.log(
+                                    "WARNING: BindToDocumentController: "
+                                    "Windows plugin factory returned null "
+                                    "ARADocumentControllerInstance");
                                 instance.ara_document_controller_host_instance
-                                    ->get(),
-                                &props);
+                                    .reset();
+                                promise.set_value(false);
+                                return;
+                            }
 
-                        if (!ctrl) {
-                            logger_.log(
-                                "WARNING: BindToDocumentController: "
-                                "Windows plugin factory returned null "
-                                "ARADocumentControllerInstance");
-                            instance.ara_document_controller_host_instance
-                                .reset();
-                            created_promise.set_value(false);
-                            return;
-                        }
+                            instance.ara_document_controller_instance = ctrl;
+                            promise.set_value(true);
+                        });
 
-                        instance.ara_document_controller_instance = ctrl;
-                        created_promise.set_value(true);
-                    });
+                    // 8MB stack — Melodyne's init path needs more than 1MB.
+                    constexpr SIZE_T ara_stack_size = 8 * 1024 * 1024;
+                    HANDLE thread_handle = CreateThread(
+                        nullptr,
+                        ara_stack_size,
+                        reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                            win32_thread_trampoline),
+                        new fu2::unique_function<void()>(std::move(create_fn)),
+                        STACK_SIZE_PARAM_IS_A_RESERVATION,
+                        nullptr);
 
                     if (!created_future.get()) {
+                        if (thread_handle) {
+                            WaitForSingleObject(thread_handle, INFINITE);
+                            CloseHandle(thread_handle);
+                        }
                         return PrimitiveResponse<native_size_t>(0);
+                    }
+                    if (thread_handle) {
+                        WaitForSingleObject(thread_handle, INFINITE);
+                        CloseHandle(thread_handle);
                     }
                 }
 
@@ -606,69 +634,91 @@ void Vst3Bridge::run() {
                     std::promise<bool> created_promise;
                     auto created_future = created_promise.get_future();
 
-                    Win32Thread create_thread([&]() {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                    auto create_fn = fu2::unique_function<void()>(
+                        [&, promise = std::move(created_promise)]() mutable {
+                            const auto& [instance, _] =
+                                get_instance(request.instance_id);
 
-                        // Try IPlugInEntryPoint first to get the factory
-                        // (both ARA1 and ARA2 share it).
-                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
-                            ep(instance.object);
-                        if (!ep) {
-                            created_promise.set_value(false);
-                            return;
-                        }
+                            // Try IPlugInEntryPoint first to get the factory
+                            // (both ARA1 and ARA2 share it).
+                            Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                                ep(instance.object);
+                            if (!ep) {
+                                promise.set_value(false);
+                                return;
+                            }
 
-                        const ARA::ARAFactory* factory = ep->getFactory();
-                        if (!factory ||
-                            !factory->createDocumentControllerWithDocument) {
-                            created_promise.set_value(false);
-                            return;
-                        }
+                            const ARA::ARAFactory* factory = ep->getFactory();
+                            if (!factory ||
+                                !factory
+                                     ->createDocumentControllerWithDocument) {
+                                promise.set_value(false);
+                                return;
+                            }
 
-                        const auto* linux_host_instance =
-                            reinterpret_cast<
-                                const ARA::ARADocumentControllerHostInstance*>(
-                                static_cast<uintptr_t>(
-                                    request.document_controller_ref));
+                            const auto* linux_host_instance =
+                                reinterpret_cast<
+                                    const ARA::
+                                        ARADocumentControllerHostInstance*>(
+                                    static_cast<uintptr_t>(
+                                        request.document_controller_ref));
 
-                        instance.ara_document_controller_host_instance =
-                            std::make_unique<
-                                WineARADocumentControllerHostInstance>(
-                                linux_host_instance,
-                                request.instance_id,
-                                *this);
+                            instance.ara_document_controller_host_instance =
+                                std::make_unique<
+                                    WineARADocumentControllerHostInstance>(
+                                    linux_host_instance,
+                                    request.instance_id,
+                                    *this);
 
-                        ARA::ARADocumentProperties props{};
-                        props.structSize = static_cast<ARA::ARASize>(
-                            ARA_IMPLEMENTED_STRUCT_SIZE(ARADocumentProperties,
-                                                        name));
-                        props.name = nullptr;
+                            ARA::ARADocumentProperties props{};
+                            props.structSize = static_cast<ARA::ARASize>(
+                                ARA_IMPLEMENTED_STRUCT_SIZE(
+                                    ARADocumentProperties, name));
+                            props.name = nullptr;
 
-                        const ARA::ARADocumentControllerInstance* ctrl =
-                            factory->createDocumentControllerWithDocument(
+                            const ARA::ARADocumentControllerInstance* ctrl =
+                                factory->createDocumentControllerWithDocument(
+                                    instance
+                                        .ara_document_controller_host_instance
+                                        ->get(),
+                                    &props);
+
+                            if (!ctrl) {
+                                logger_.log(
+                                    "WARNING: "
+                                    "BindToDocumentControllerWithRoles: "
+                                    "Windows plugin factory returned null "
+                                    "ARADocumentControllerInstance");
                                 instance.ara_document_controller_host_instance
-                                    ->get(),
-                                &props);
+                                    .reset();
+                                promise.set_value(false);
+                                return;
+                            }
 
-                        if (!ctrl) {
-                            logger_.log(
-                                "WARNING: "
-                                "BindToDocumentControllerWithRoles: "
-                                "Windows plugin factory returned null "
-                                "ARADocumentControllerInstance");
-                            instance.ara_document_controller_host_instance
-                                .reset();
-                            created_promise.set_value(false);
-                            return;
-                        }
+                            instance.ara_document_controller_instance = ctrl;
+                            promise.set_value(true);
+                        });
 
-                        instance.ara_document_controller_instance = ctrl;
-                        created_promise.set_value(true);
-                    });
+                    constexpr SIZE_T ara_stack_size = 8 * 1024 * 1024;
+                    HANDLE thread_handle = CreateThread(
+                        nullptr,
+                        ara_stack_size,
+                        reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                            win32_thread_trampoline),
+                        new fu2::unique_function<void()>(std::move(create_fn)),
+                        STACK_SIZE_PARAM_IS_A_RESERVATION,
+                        nullptr);
 
                     if (!created_future.get()) {
+                        if (thread_handle) {
+                            WaitForSingleObject(thread_handle, INFINITE);
+                            CloseHandle(thread_handle);
+                        }
                         return PrimitiveResponse<native_size_t>(0);
+                    }
+                    if (thread_handle) {
+                        WaitForSingleObject(thread_handle, INFINITE);
+                        CloseHandle(thread_handle);
                     }
                 }
 
