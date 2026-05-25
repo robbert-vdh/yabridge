@@ -130,3 +130,24 @@ YaARAPlugInEntryPoint2::ConstructArgs::ConstructArgs(
 
 YaARAPlugInEntryPoint2::YaARAPlugInEntryPoint2(ConstructArgs&& args) noexcept
     : arguments_(std::move(args)) {}
+
+AraPlugInExtensionProxy::AraPlugInExtensionProxy() noexcept {
+    // Populate structSize to the minimum required by the ARA spec so the host
+    // can safely validate the struct before reading any fields.
+    instance_.structSize =
+        static_cast<ARA::ARASize>(kARAPlugInExtensionInstanceMinSize);
+
+    // ARA 1 deprecated fields — must be written as null per spec.
+    instance_.plugInExtensionRef = nullptr;
+    instance_.plugInExtensionInterface = nullptr;
+
+    // ARA 2 role interfaces — all null. The spec requires hosts to null-check
+    // these before calling into them, so a null interface pointer is a valid
+    // way to indicate "this role is not supported by this instance".
+    instance_.playbackRendererRef = nullptr;
+    instance_.playbackRendererInterface = nullptr;
+    instance_.editorRendererRef = nullptr;
+    instance_.editorRendererInterface = nullptr;
+    instance_.editorViewRef = nullptr;
+    instance_.editorViewInterface = nullptr;
+}

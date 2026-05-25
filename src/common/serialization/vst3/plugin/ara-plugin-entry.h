@@ -150,6 +150,37 @@ struct YaARAFactory {
 };
 
 /**
+ * A minimal stub for `ARA::ARAPlugInExtensionInstance` returned by
+ * `bindToDocumentController()` and `bindToDocumentControllerWithRoles()`.
+ *
+ * Carla (and other ARA hosts) spin in an infinite loop when these functions
+ * return `nullptr` because they interpret null as "not yet ready" and keep
+ * retrying. Returning a valid, properly-sized instance struct breaks that loop.
+ *
+ * All role interfaces (playback renderer, editor renderer, editor view) are
+ * left as null pointers — the ARA spec requires hosts to null-check them before
+ * use, so this is safe. The deprecated ARA 1 fields are also null per spec.
+ *
+ * Lifetime: one instance is created per `bindToDocumentController[WithRoles]()`
+ * call and owned by the `Vst3PluginProxyImpl` that made the call.
+ */
+class AraPlugInExtensionProxy {
+   public:
+    AraPlugInExtensionProxy() noexcept;
+
+    /**
+     * Return the `ARAPlugInExtensionInstance*` pointer that the host expects.
+     * The returned pointer remains valid for the lifetime of this object.
+     */
+    const ARA::ARAPlugInExtensionInstance* get() const noexcept {
+        return &instance_;
+    }
+
+   private:
+    ARA::ARAPlugInExtensionInstance instance_{};
+};
+
+/**
  * Wraps around `ARA::IPlugInEntryPoint` for detection purposes. This is
  * instantiated as part of `Vst3PluginProxy`.
  *

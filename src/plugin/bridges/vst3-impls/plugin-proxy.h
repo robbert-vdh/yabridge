@@ -454,6 +454,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     Steinberg::IPtr<Steinberg::FUnknown> host_context_;
 
     std::unique_ptr<AraFactoryProxy> ara_factory_proxy_;
+    std::unique_ptr<AraPlugInExtensionProxy> ara_plug_in_extension_proxy_;
 
     /**
      * We'll periodically synchronize the Wine host's audio thread priority with

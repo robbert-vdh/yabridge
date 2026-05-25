@@ -237,10 +237,16 @@ const ARA::ARAPlugInExtensionInstance* PLUGIN_API
 Vst3PluginProxyImpl::bindToDocumentController(
     ARA::ARADocumentControllerRef /*documentControllerRef*/) {
     bridge_.logger_.log(
-        "WARNING: Unexpected call to "
-        "'ARA::IPlugInEntryPoint::bindToDocumentController()' — "
-        "ARA document controller proxying is not yet implemented");
-    return nullptr;
+        "NOTE: ARA::IPlugInEntryPoint::bindToDocumentController() called — "
+        "returning minimal stub ARAPlugInExtensionInstance (document "
+        "controller proxying is not yet fully implemented)");
+
+    if (!ara_plug_in_extension_proxy_) {
+        ara_plug_in_extension_proxy_ =
+            std::make_unique<AraPlugInExtensionProxy>();
+    }
+
+    return ara_plug_in_extension_proxy_->get();
 }
 #pragma GCC diagnostic pop
 
@@ -251,10 +257,16 @@ Vst3PluginProxyImpl::bindToDocumentControllerWithRoles(
     ARA::ARAPlugInInstanceRoleFlags /*knownRoles*/,
     ARA::ARAPlugInInstanceRoleFlags /*assignedRoles*/) {
     bridge_.logger_.log(
-        "WARNING: Unexpected call to "
-        "'ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles()' — "
-        "ARA document controller proxying is not yet implemented");
-    return nullptr;
+        "NOTE: ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles() "
+        "called — returning minimal stub ARAPlugInExtensionInstance (document "
+        "controller proxying is not yet fully implemented)");
+
+    if (!ara_plug_in_extension_proxy_) {
+        ara_plug_in_extension_proxy_ =
+            std::make_unique<AraPlugInExtensionProxy>();
+    }
+
+    return ara_plug_in_extension_proxy_->get();
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
