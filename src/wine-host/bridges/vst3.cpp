@@ -159,6 +159,7 @@ ara_read_bytes_from_archive(ARA::ARAArchivingControllerHostRef ref,
             reinterpret_cast<native_size_t>(reader_ref),
         .position = static_cast<uint64_t>(position),
         .length = static_cast<uint64_t>(length),
+        .buffer = {},
     };
     const ARA::ARABool result =
         proxy->bridge_->send_message(std::move(request));
@@ -235,14 +236,14 @@ WineARADocumentControllerHostInstance::WineARADocumentControllerHostInstance(
     // We use `this` as the Wine-side host ref so the static stubs can recover
     // the proxy pointer without any global state.
     audio_access_iface_.structSize =
-        static_cast<ARA::ARASize>(kARAAudioAccessControllerInterfaceMinSize);
+        static_cast<ARA::ARASize>(ARA::kARAAudioAccessControllerInterfaceMinSize);
     audio_access_iface_.createAudioReaderForSource = ara_create_audio_reader;
     audio_access_iface_.readAudioSamples = ara_read_audio_samples;
     audio_access_iface_.destroyAudioReader = ara_destroy_audio_reader;
 
     // Populate the archiving interface table.
     archiving_iface_.structSize =
-        static_cast<ARA::ARASize>(kARAArchivingControllerInterfaceMinSize);
+        static_cast<ARA::ARASize>(ARA::kARAArchivingControllerInterfaceMinSize);
     archiving_iface_.getArchiveSize = ara_get_archive_size;
     archiving_iface_.readBytesFromArchive = ara_read_bytes_from_archive;
     archiving_iface_.writeBytesToArchive = ara_write_bytes_to_archive;
@@ -255,7 +256,7 @@ WineARADocumentControllerHostInstance::WineARADocumentControllerHostInstance(
 
     // Assemble the host instance struct.
     host_instance_.structSize =
-        static_cast<ARA::ARASize>(kARADocumentControllerHostInstanceMinSize);
+        static_cast<ARA::ARASize>(ARA::kARADocumentControllerHostInstanceMinSize);
 
     // Mandatory: audio access — use `this` as the Wine-side host ref.
     host_instance_.audioAccessControllerHostRef =
