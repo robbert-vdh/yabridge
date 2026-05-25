@@ -41,16 +41,13 @@ constexpr char other_instance_message_id[] = "yabridge_other_instance";
 constexpr char other_instance_pointer_attribute[] = "other_proxy_ptr";
 
 namespace {
-const Steinberg::FUID kAraPlugInEntryPointLegacyIid(
-    0x3D4BD6B5, 0x913A4FD2, 0xA886E768, 0xA5EB92C1);
-const Steinberg::FUID kAraPlugInEntryPoint2AgreementsIid(
-    0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0);
-const Steinberg::FUID kAraPlugInEntryPoint2AltIid(
-    0x8683B01F, 0x7B354F70, 0xA2651DEC, 0x353AF4FF);
-
-bool iid_matches(const Steinberg::TUID iid, const Steinberg::FUID& uid) {
+bool iid_matches_raw(const Steinberg::TUID iid,
+                     uint32_t a,
+                     uint32_t b,
+                     uint32_t c,
+                     uint32_t d) {
     Steinberg::TUID uid_tuid{};
-    uid.toTUID(uid_tuid);
+    Steinberg::FUID(a, b, c, d).toTUID(uid_tuid);
     return std::memcmp(iid, uid_tuid, sizeof(Steinberg::TUID)) == 0;
 }
 }  // namespace
@@ -81,21 +78,21 @@ Vst3PluginProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     static std::atomic_bool logged_ara_entry_point2_alt{false};
 
     if (!logged_ara_entry_point_legacy.load(std::memory_order_relaxed) &&
-        iid_matches(_iid, kAraPlugInEntryPointLegacyIid) &&
+        iid_matches_raw(_iid, 0x3D4BD6B5, 0x913A4FD2, 0xA886E768, 0xA5EB92C1) &&
         !logged_ara_entry_point_legacy.exchange(true,
                                                 std::memory_order_relaxed)) {
         bridge_.logger_.log(
             "DEBUG: Host queried ARA::IPlugInEntryPoint legacy IID");
     }
     if (!logged_ara_entry_point2_agreements.load(std::memory_order_relaxed) &&
-        iid_matches(_iid, kAraPlugInEntryPoint2AgreementsIid) &&
+        iid_matches_raw(_iid, 0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0) &&
         !logged_ara_entry_point2_agreements.exchange(
             true, std::memory_order_relaxed)) {
         bridge_.logger_.log(
             "DEBUG: Host queried ARA::IPlugInEntryPoint2 agreements IID");
     }
     if (!logged_ara_entry_point2_alt.load(std::memory_order_relaxed) &&
-        iid_matches(_iid, kAraPlugInEntryPoint2AltIid) &&
+        iid_matches_raw(_iid, 0x8683B01F, 0x7B354F70, 0xA2651DEC, 0x353AF4FF) &&
         !logged_ara_entry_point2_alt.exchange(true,
                                               std::memory_order_relaxed)) {
         bridge_.logger_.log(
