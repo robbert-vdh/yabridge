@@ -241,8 +241,15 @@ void Vst3Bridge::run() {
             },
             [&](const YaARAPlugInEntryPoint::BindToDocumentController& request)
                 -> YaARAPlugInEntryPoint::BindToDocumentController::Response {
-                return main_context_
-                    .run_in_context([&]() -> PrimitiveResponse<native_size_t> {
+                // The Windows plugin may synchronously call back into the
+                // bridge during bindToDocumentController() (e.g. to create a
+                // document controller or query the factory). Using
+                // do_mutual_recursion_on_gui_thread() instead of
+                // run_in_context().get() allows the GUI thread to service
+                // those incoming callbacks while waiting for the plugin call
+                // to return, preventing a stack overflow / deadlock.
+                return do_mutual_recursion_on_gui_thread(
+                    [&]() -> PrimitiveResponse<native_size_t> {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
@@ -271,23 +278,17 @@ void Vst3Bridge::run() {
                             return PrimitiveResponse<native_size_t>(0);
                         }
 
-                        // Store the pointer so it stays alive for the
-                        // lifetime of the plugin instance.
                         instance.ara_plug_in_extension = ext;
-
-                        // Return a non-zero sentinel so the native side knows
-                        // the call succeeded. The actual struct lives on the
-                        // Wine side; the native side uses its own stub.
                         return PrimitiveResponse<native_size_t>(1);
-                    })
-                    .get();
+                    });
             },
             [&](const YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles&
                     request)
                 -> YaARAPlugInEntryPoint2::
                     BindToDocumentControllerWithRoles::Response {
-                return main_context_
-                    .run_in_context([&]() -> PrimitiveResponse<native_size_t> {
+                // Same mutual-recursion guard as above.
+                return do_mutual_recursion_on_gui_thread(
+                    [&]() -> PrimitiveResponse<native_size_t> {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
@@ -347,8 +348,7 @@ void Vst3Bridge::run() {
 
                         instance.ara_plug_in_extension = ext;
                         return PrimitiveResponse<native_size_t>(1);
-                    })
-                    .get();
+                    });
             },
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {
