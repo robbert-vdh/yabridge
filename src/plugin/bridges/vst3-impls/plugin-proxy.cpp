@@ -46,7 +46,7 @@ class AraFactoryProxy {
           instance_id_(instance_id),
           snapshot_(std::move(snapshot)) {
         factory_.structSize = snapshot_.struct_size ? static_cast<ARA::ARASize>(snapshot_.struct_size)
-                                 : ARA::kARAFactoryMinSize;
+                                 : static_cast<ARA::ARASize>(ARA::kARAFactoryMinSize);
         factory_.lowestSupportedApiGeneration =
             snapshot_.lowest_supported_api_generation;
         factory_.highestSupportedApiGeneration =

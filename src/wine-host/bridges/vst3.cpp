@@ -275,8 +275,8 @@ void Vst3Bridge::run() {
                         ARA::ARAInterfaceConfiguration config{};
                         config.structSize =
                             request.config.struct_size
-                                ? request.config.struct_size
-                                : ARA::kARAInterfaceConfigurationMinSize;
+                                ? static_cast<ARA::ARASize>(request.config.struct_size)
+                                : static_cast<ARA::ARASize>(ARA::kARAInterfaceConfigurationMinSize);
                         config.desiredApiGeneration =
                             request.config.desired_api_generation;
                         config.assertFunctionAddress = nullptr;

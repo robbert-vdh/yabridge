@@ -135,7 +135,7 @@ AraPlugInExtensionProxy::AraPlugInExtensionProxy() noexcept {
     // Populate structSize to the minimum required by the ARA spec so the host
     // can safely validate the struct before reading any fields.
     instance_.structSize =
-        static_cast<ARA::ARASize>(kARAPlugInExtensionInstanceMinSize);
+        static_cast<ARA::ARASize>(ARA::kARAPlugInExtensionInstanceMinSize);
 
     // ARA 1 deprecated fields — must be written as null per spec.
     instance_.plugInExtensionRef = nullptr;
