@@ -235,11 +235,24 @@ const ARA::ARAFactory* PLUGIN_API Vst3PluginProxyImpl::getFactory() {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 const ARA::ARAPlugInExtensionInstance* PLUGIN_API
 Vst3PluginProxyImpl::bindToDocumentController(
-    ARA::ARADocumentControllerRef /*documentControllerRef*/) {
+    ARA::ARADocumentControllerRef documentControllerRef) {
     bridge_.logger_.log(
         "NOTE: ARA::IPlugInEntryPoint::bindToDocumentController() called — "
-        "returning minimal stub ARAPlugInExtensionInstance (document "
-        "controller proxying is not yet fully implemented)");
+        "forwarding to Windows plugin via IPC");
+
+    const native_size_t result =
+        bridge_.send_message(YaARAPlugInEntryPoint::BindToDocumentController{
+            .instance_id = instance_id(),
+            .document_controller_ref = reinterpret_cast<native_size_t>(
+                documentControllerRef),
+        });
+
+    if (!result) {
+        bridge_.logger_.log(
+            "WARNING: bindToDocumentController() — Windows plugin returned "
+            "nullptr, returning null to host");
+        return nullptr;
+    }
 
     if (!ara_plug_in_extension_proxy_) {
         ara_plug_in_extension_proxy_ =
@@ -253,13 +266,28 @@ Vst3PluginProxyImpl::bindToDocumentController(
 // From `ARA::IPlugInEntryPoint2`
 const ARA::ARAPlugInExtensionInstance* PLUGIN_API
 Vst3PluginProxyImpl::bindToDocumentControllerWithRoles(
-    ARA::ARADocumentControllerRef /*documentControllerRef*/,
-    ARA::ARAPlugInInstanceRoleFlags /*knownRoles*/,
-    ARA::ARAPlugInInstanceRoleFlags /*assignedRoles*/) {
+    ARA::ARADocumentControllerRef documentControllerRef,
+    ARA::ARAPlugInInstanceRoleFlags knownRoles,
+    ARA::ARAPlugInInstanceRoleFlags assignedRoles) {
     bridge_.logger_.log(
         "NOTE: ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles() "
-        "called — returning minimal stub ARAPlugInExtensionInstance (document "
-        "controller proxying is not yet fully implemented)");
+        "called — forwarding to Windows plugin via IPC");
+
+    const native_size_t result = bridge_.send_message(
+        YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles{
+            .instance_id = instance_id(),
+            .document_controller_ref = reinterpret_cast<native_size_t>(
+                documentControllerRef),
+            .known_roles = knownRoles,
+            .assigned_roles = assignedRoles,
+        });
+
+    if (!result) {
+        bridge_.logger_.log(
+            "WARNING: bindToDocumentControllerWithRoles() — Windows plugin "
+            "returned nullptr, returning null to host");
+        return nullptr;
+    }
 
     if (!ara_plug_in_extension_proxy_) {
         ara_plug_in_extension_proxy_ =

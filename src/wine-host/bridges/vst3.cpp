@@ -239,14 +239,116 @@ void Vst3Bridge::run() {
                 response.factory = YaARAFactorySnapshot(factory);
                 return response;
             },
-            [&](const YaARAPlugInEntryPoint::BindToDocumentController&)
+            [&](const YaARAPlugInEntryPoint::BindToDocumentController& request)
                 -> YaARAPlugInEntryPoint::BindToDocumentController::Response {
-                return PrimitiveResponse<native_size_t>(0);
+                return main_context_
+                    .run_in_context([&]() -> PrimitiveResponse<native_size_t> {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                            entry_point(instance.object);
+                        if (!entry_point) {
+                            logger_.log(
+                                "WARNING: BindToDocumentController: instance "
+                                "does not support ARA::IPlugInEntryPoint");
+                            return PrimitiveResponse<native_size_t>(0);
+                        }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                        const ARA::ARAPlugInExtensionInstance* ext =
+                            entry_point->bindToDocumentController(
+                                reinterpret_cast<ARA::ARADocumentControllerRef>(
+                                    request.document_controller_ref));
+#pragma GCC diagnostic pop
+
+                        if (!ext) {
+                            logger_.log(
+                                "WARNING: BindToDocumentController: Windows "
+                                "plugin returned nullptr for "
+                                "ARAPlugInExtensionInstance");
+                            return PrimitiveResponse<native_size_t>(0);
+                        }
+
+                        // Store the pointer so it stays alive for the
+                        // lifetime of the plugin instance.
+                        instance.ara_plug_in_extension = ext;
+
+                        // Return a non-zero sentinel so the native side knows
+                        // the call succeeded. The actual struct lives on the
+                        // Wine side; the native side uses its own stub.
+                        return PrimitiveResponse<native_size_t>(1);
+                    })
+                    .get();
             },
-            [&](const YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles&)
+            [&](const YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles&
+                    request)
                 -> YaARAPlugInEntryPoint2::
                     BindToDocumentControllerWithRoles::Response {
-                return PrimitiveResponse<native_size_t>(0);
+                return main_context_
+                    .run_in_context([&]() -> PrimitiveResponse<native_size_t> {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint2>
+                            entry_point2(instance.object);
+                        if (!entry_point2) {
+                            // Fall back to ARA 1 IPlugInEntryPoint if the
+                            // plugin only supports the older interface.
+                            Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                                entry_point(instance.object);
+                            if (!entry_point) {
+                                logger_.log(
+                                    "WARNING: "
+                                    "BindToDocumentControllerWithRoles: "
+                                    "instance supports neither "
+                                    "IPlugInEntryPoint nor IPlugInEntryPoint2");
+                                return PrimitiveResponse<native_size_t>(0);
+                            }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                            const ARA::ARAPlugInExtensionInstance* ext =
+                                entry_point->bindToDocumentController(
+                                    reinterpret_cast<
+                                        ARA::ARADocumentControllerRef>(
+                                        request.document_controller_ref));
+#pragma GCC diagnostic pop
+
+                            if (!ext) {
+                                logger_.log(
+                                    "WARNING: "
+                                    "BindToDocumentControllerWithRoles "
+                                    "(ARA1 fallback): Windows plugin returned "
+                                    "nullptr");
+                                return PrimitiveResponse<native_size_t>(0);
+                            }
+
+                            instance.ara_plug_in_extension = ext;
+                            return PrimitiveResponse<native_size_t>(1);
+                        }
+
+                        const ARA::ARAPlugInExtensionInstance* ext =
+                            entry_point2->bindToDocumentControllerWithRoles(
+                                reinterpret_cast<ARA::ARADocumentControllerRef>(
+                                    request.document_controller_ref),
+                                request.known_roles,
+                                request.assigned_roles);
+
+                        if (!ext) {
+                            logger_.log(
+                                "WARNING: "
+                                "BindToDocumentControllerWithRoles: Windows "
+                                "plugin returned nullptr for "
+                                "ARAPlugInExtensionInstance");
+                            return PrimitiveResponse<native_size_t>(0);
+                        }
+
+                        instance.ara_plug_in_extension = ext;
+                        return PrimitiveResponse<native_size_t>(1);
+                    })
+                    .get();
             },
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {

@@ -232,6 +232,14 @@ struct Vst3PluginInstance {
     std::recursive_mutex get_size_mutex;
 
     /**
+     * The `ARAPlugInExtensionInstance` returned by the Windows plugin when
+     * `bindToDocumentController[WithRoles]()` was called on it. We keep this
+     * alive for the lifetime of the plugin instance — the ARA spec requires the
+     * pointer to remain valid until the companion plug-in is destroyed.
+     */
+    const ARA::ARAPlugInExtensionInstance* ara_plug_in_extension = nullptr;
+
+    /**
      * This contains smart pointers to all VST3 plugin interfaces that can be
      * casted from `object`.
      */
