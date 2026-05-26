@@ -521,7 +521,7 @@ void Vst3Bridge::run() {
                         reinterpret_cast<LPTHREAD_START_ROUTINE>(
                             win32_thread_trampoline),
                         new fu2::unique_function<void()>(std::move(create_fn)),
-                        STACK_SIZE_PARAM_IS_A_RESERVATION,
+                        0 /* commit full stack */,
                         nullptr);
 
                     if (!created_future.get()) {
@@ -653,14 +653,14 @@ void Vst3Bridge::run() {
                             promise.set_value(true);
                         });
 
-                    constexpr SIZE_T ara_stack_size = 8 * 1024 * 1024;
+                    constexpr SIZE_T ara_stack_size = 32 * 1024 * 1024;
                     HANDLE thread_handle = CreateThread(
                         nullptr,
                         ara_stack_size,
                         reinterpret_cast<LPTHREAD_START_ROUTINE>(
                             win32_thread_trampoline),
                         new fu2::unique_function<void()>(std::move(create_fn)),
-                        STACK_SIZE_PARAM_IS_A_RESERVATION,
+                        0 /* commit full stack */,
                         nullptr);
 
                     if (!created_future.get()) {
