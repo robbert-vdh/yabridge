@@ -1,121 +1,123 @@
-18:37:43 [Melodyne-8HMdmoqv] Initializing yabridge version 87312440
-18:37:43 [Melodyne-8HMdmoqv] library:       '/home/samuel/.local/share/yabridge/libyabridge-vst3.so'
-18:37:43 [Melodyne-8HMdmoqv] host:          '/home/samuel/.local/share/yabridge/yabridge-host.exe'
-18:37:43 [Melodyne-8HMdmoqv] plugin:        '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
-18:37:43 [Melodyne-8HMdmoqv] plugin type:   'VST3'
-18:37:43 [Melodyne-8HMdmoqv] realtime:      'no'
-18:37:43 [Melodyne-8HMdmoqv] sockets:       '/run/user/1000/yabridge-Melodyne-8HMdmoqv'
-18:37:43 [Melodyne-8HMdmoqv] wine prefix:   '/home/samuel/.wine'
-18:37:43 [Melodyne-8HMdmoqv] wine version:  '9.0 (Ubuntu 9.0~repack-4build3)'
-18:37:43 [Melodyne-8HMdmoqv] 
-18:37:43 [Melodyne-8HMdmoqv] config from:   '<defaults>'
-18:37:43 [Melodyne-8HMdmoqv] hosting mode:  'individually, 64-bit'
-18:37:43 [Melodyne-8HMdmoqv] other options: '<none>'
-18:37:43 [Melodyne-8HMdmoqv] 
-18:37:43 [Melodyne-8HMdmoqv] Enabled features:
-18:37:43 [Melodyne-8HMdmoqv] - bitbridge support
-18:37:43 [Melodyne-8HMdmoqv] - CLAP support
-18:37:43 [Melodyne-8HMdmoqv] - VST3 support
-18:37:43 [Melodyne-8HMdmoqv] 
-18:37:44 [Melodyne-8HMdmoqv] [Wine STDERR] Initializing yabridge host version 87312440
-18:37:44 [Melodyne-8HMdmoqv] [Wine STDERR] Preparing to load VST3 plugin at '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
-18:37:44 [Melodyne-8HMdmoqv] [host -> plugin] >> GetPluginFactory()
-18:37:44 [Melodyne-8HMdmoqv] [plugin -> host] >> Requesting <Configuration>
-18:37:44 [Melodyne-8HMdmoqv] [plugin <- host]    <Configuration>
-18:37:44 [Melodyne-8HMdmoqv] [Wine STDERR] Finished initializing '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
-18:37:44 [Melodyne-8HMdmoqv] [host <- plugin]    <IPluginFactory2* with 2 registered classes>
-18:37:44 [Melodyne-8HMdmoqv] [query interface] In IPluginFactory::queryInterface(): {0x0007B650, 0xF24B4C0B, 0xA464EDB9, 0xF00B2ABB}
-18:37:44 [Melodyne-8HMdmoqv] [unknown interface] In IPluginFactory::queryInterface(): {0x4555A2AB, 0xC1234E57, 0x9B122910, 0x36878931}
-18:37:44 [Melodyne-8HMdmoqv] [host -> plugin] >> IPluginFactory::createInstance(cid = {0x5653544D, 0x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj)
-18:37:44 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-18:37:44 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-18:37:44 [Melodyne-8HMdmoqv] [host <- plugin]    <FUnknown* #0>
-18:37:44 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
-18:37:44 [Melodyne-8HMdmoqv] [host -> plugin] >> 0: IPluginBase::initialize(context = <FUnknown*>)
-18:37:45 [Melodyne-8HMdmoqv] [plugin -> host] >> 0: IHostApplication::getName(&name)
-18:37:45 [Melodyne-8HMdmoqv] [plugin <- host]    kResultOk, "libcarla_standalone2"
-18:37:45 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk
-18:37:45 [Melodyne-8HMdmoqv] [host -> plugin] >> 0: IComponent::getBusCount(type = 0, dir = 0)
-18:37:45 [Melodyne-8HMdmoqv] [host <- plugin]    1
-18:37:45 [Melodyne-8HMdmoqv] [host -> plugin] >> 0: IComponent::getBusInfo(type = 0, dir = 0, index = 0, &bus)
-18:37:45 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk, <BusInfo for "Main In" with 2 channels, type = 0, flags = 1>
-18:37:45 [Melodyne-8HMdmoqv] [host -> plugin] >> 0: IComponent::getBusCount(type = 0, dir = 1)
-18:37:45 [Melodyne-8HMdmoqv] [host <- plugin]    1
-18:37:45 [Melodyne-8HMdmoqv] [host -> plugin] >> 0: IComponent::getBusInfo(type = 0, dir = 1, index = 0, &bus)
-18:37:45 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk, <BusInfo for "Main Out" with 2 channels, type = 0, flags = 1>
-18:37:45 [Melodyne-8HMdmoqv] [host -> plugin] >> 0: IPluginBase::terminate()
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCC0B7716, 0x362B4EE5, 0x89EE5F41, 0x5458463F}
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xEEC89683, 0x80DB4336, 0x9177273E, 0x138A763B}
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
-18:37:45 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk
-18:37:45 [Melodyne-8HMdmoqv] [host -> plugin] >> 0: FUnknown::~FUnknown()
-18:37:45 [Melodyne-8HMdmoqv] [host <- plugin]    ACK
-18:37:45 [Melodyne-8HMdmoqv] [host -> plugin] >> IPluginFactory::createInstance(cid = {0x5653544D, 0x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj)
-18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj18:37:45 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
-18:37:45 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IPluginBase::initialize(context = <FUnknown*>)
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
+19:18:40 [Melodyne-6GHSZaho] Initializing yabridge version 3b307c7d
+19:18:40 [Melodyne-6GHSZaho] library:       '/home/samuel/.local/share/yabridge/libyabridge-vst3.so'
+19:18:40 [Melodyne-6GHSZaho] host:          '/home/samuel/.local/share/yabridge/yabridge-host.exe'
+19:18:40 [Melodyne-6GHSZaho] plugin:        '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:18:40 [Melodyne-6GHSZaho] plugin type:   'VST3'
+19:18:40 [Melodyne-6GHSZaho] realtime:      'no'
+19:18:40 [Melodyne-6GHSZaho] sockets:       '/run/user/1000/yabridge-Melodyne-6GHSZaho'
+19:18:40 [Melodyne-6GHSZaho] wine prefix:   '/home/samuel/.wine'
+19:18:40 [Melodyne-6GHSZaho] wine version:  '9.0 (Ubuntu 9.0~repack-4build3)'
+19:18:40 [Melodyne-6GHSZaho] 
+19:18:40 [Melodyne-6GHSZaho] config from:   '<defaults>'
+19:18:40 [Melodyne-6GHSZaho] hosting mode:  'individually, 64-bit'
+19:18:40 [Melodyne-6GHSZaho] other options: '<none>'
+19:18:40 [Melodyne-6GHSZaho] 
+19:18:40 [Melodyne-6GHSZaho] Enabled features:
+19:18:40 [Melodyne-6GHSZaho] - bitbridge support
+19:18:40 [Melodyne-6GHSZaho] - CLAP support
+19:18:40 [Melodyne-6GHSZaho] - VST3 support
+19:18:40 [Melodyne-6GHSZaho] 
+19:18:41 [Melodyne-6GHSZaho] [Wine STDERR] Initializing yabridge host version 3b307c7d
+19:18:41 [Melodyne-6GHSZaho] [Wine STDERR] Preparing to load VST3 plugin at '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:18:41 [Melodyne-6GHSZaho] [host -> plugin] >> GetPluginFactory()
+19:18:41 [Melodyne-6GHSZaho] [plugin -> host] >> Requesting <Configuration>
+19:18:41 [Melodyne-6GHSZaho] [plugin <- host]    <Configuration>
+19:18:41 [Melodyne-6GHSZaho] [Wine STDERR] Finished initializing '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:18:41 [Melodyne-6GHSZaho] [host <- plugin]    <IPluginFactory2* with 2 registered classes>
+19:18:41 [Melodyne-6GHSZaho] [query interface] In IPluginFactory::queryInterface(): {0x0007B650, 0xF24B4C0B, 0xA464EDB9, 0xF00B2ABB}
+19:18:41 [Melodyne-6GHSZaho] [unknown interface] In IPluginFactory::queryInterface(): {0x4555A2AB, 0xC1234E57, 0x9B122910, 0x36878931}
+19:18:41 [Melodyne-6GHSZaho] [host -> plugin] >> IPluginFactory::createInstance(cid = {0x5653544D, 0x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj)
+19:18:41 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:18:41 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:18:41 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+:18:41 [Melodyne-6GHSZaho] [host <- plugin]    <FUnknown* #0>
+19:18:41 [Melodyne-6GHSZaho] [host -> plugin] >> 0: IPluginBase::initialize(context = <FUnknown*>)
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
 }
-18:37:46 [Melodyne-8HMdmoqv] [plugin -> host] >> 1: IHostApplication::getName(&name)
-18:37:46 [Melodyne-8HMdmoqv] [plugin <- host]    kResultOk, "libcarla_standalone2"
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk
-18:37:46 [Melodyne-8HMdmoqv] [query interface] In FUnknown::queryInterface(): {0x42043F99, 0xB7DA453C, 0xA569E79D, 0x9AAEC33D}
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IComponent::getBusCount(type = 0, dir = 0)
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCC0B7716, 0x362B4EE5, 0x89EE5F41, 0x5458463F}
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    1
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    1
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IComponent::getBusInfo(type = 0, dir = 0, index = 0, &bus)
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xEEC89683, 0x80DB4336, 0x9177273E, 0x138A763B}
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk, <BusInfo for "Main In" with 2 channels, type = 0, flags = 1>
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IAudioProcessor::getBusArrangement(dir = 0, index = 0, &arr)
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk, <SpeakerArrangement: 0b0000000000000000000000000000000000000000000000000000000000000011>
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IComponent::getBusCount(type = 0, dir = 1)
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    1
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IComponent::getBusInfo(type = 0, dir = 1, index = 0, &bus)
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk, <BusInfo for "Main Out" with 2 channels, type = 0, flags = 1>
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IAudioProcessor::getBusArrangement(dir = 1, index = 0, &arr)
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk, <SpeakerArrangement: 0b0000000000000000000000000000000000000000000000000000000000000011>
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IComponent::getBusCount(type = 1, dir = 0)
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    0
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IComponent::getBusCount(type = 1, dir = 1)
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    0
-18:37:46 [Melodyne-8HMdmoqv] [query interface] In FUnknown::queryInterface(): {0xDCD7BBE3, 0x7742448D, 0xA874AACC, 0x979C759E}
-18:37:46 [Melodyne-8HMdmoqv] [query interface] In FUnknown::queryInterface(): {0xDCD7BBE3, 0x7742448D, 0xA874AACC, 0x979C759E}
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: IEditController::setComponentHandler(handler = <IComponentHandler*>)
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] [unknown interface] In IComponentHandler::queryInterface(): {0x483E61EA, 0x17994494, 0x8199A35A, 0xEBB35E3C}
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    kResultOk
-18:37:46 [Melodyne-8HMdmoqv] [query interface] In FUnknown::queryInterface(): {0x42043F99, 0xB7DA453C, 0xA569E79D, 0x9AAEC33D}
-18:37:46 [Melodyne-8HMdmoqv] [query interface] In FUnknown::queryInterface(): {0x3D4BD6B5, 0x913A4FD2, 0xA886E768, 0xA5EB92C1}
-18:37:46 [Melodyne-8HMdmoqv] [query interface] In FUnknown::queryInterface(): {0x8683B01F, 0x7B354F70, 0xA2651DEC, 0x353AF4FF}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0x6C389611, 0xD391455D, 0xB870B833, 0x94A0EFDD}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0x7F4EFE59, 0xF3204967, 0xAC27A3AE, 0xAFB63038}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0xDF0FF9F7, 0x49B74669, 0xB63AB732, 0x7ADBF5E5}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0x93A0BEA3, 0x0BD045DB, 0x8E890B0C, 0xC1E46AC6}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0xF040B4B3, 0xA36045EC, 0xABCDC045, 0xB4D5A2CC}
-18:37:46 [Melodyne-8HMdmoqv] [query interface] In FUnknown::queryInterface(): {0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0x6C389611, 0xD391455D, 0xB870B833, 0x94A0EFDD}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0x7F4EFE59, 0xF3204967, 0xAC27A3AE, 0xAFB63038}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0xDF0FF9F7, 0x49B74669, 0xB63AB732, 0x7ADBF5E5}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0x93A0BEA3, 0x0BD045DB, 0x8E890B0C, 0xC1E46AC6}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0xF040B4B3, 0xA36045EC, 0xABCDC045, 0xB4D5A2CC}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0x70A4156F, 0x6E6E4026, 0x989148BF, 0xAA60D8D1}
-18:37:46 [Melodyne-8HMdmoqv] [unknown interface] In FUnknown::queryInterface(): {0x70A4156F, 0x6E6E4026, 0x989148BF, 0xAA60D8D1}
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: ARA::IPlugInEntryPoint::getFactory()
-18:37:46 [Melodyne-8HMdmoqv] [host <- plugin]    supported
-18:37:46 [Melodyne-8HMdmoqv] NOTE: ARA::IPlugInEntryPoint::bindToDocumentController() called — forwarding to Windows plugin via IPC
-18:37:46 [Melodyne-8HMdmoqv] [host -> plugin] >> 1: ARA::IPlugInEntryPoint::bindToDocumentController(documentControllerRef = 0x1)
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] NOTE: BindToDocumentController handler entered on Wine side (documentControllerRef = 1)
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] NOTE: BindToDocumentController: CreateThread lambda started
-18:37:46 [Melodyne-8HMdmoqv] [Wine STDERR] NOTE: BindToDocumentController: calling createDocumentControllerWithDocument()
+19:18:42 [Melodyne-6GHSZaho] [plugin -> host] >> 0: IHostApplication::getName(&name)
+19:18:42 [Melodyne-6GHSZaho] [plugin <- host]    kResultOk, "libcarla_standalone2"
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCC0B7716, 0x362B4EE5, 0x89EE5F41, 0x5458463F}
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xEEC89683, 0x80DB4336, 0x9177273E, 0x138A763B}
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:18:42 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk
+19:18:42 [Melodyne-6GHSZaho] [host -> plugin] >> 0: IComponent::getBusCount(type = 0, dir = 0)
+19:18:42 [Melodyne-6GHSZaho] [host <- plugin]    1
+19:18:42 [Melodyne-6GHSZaho] [host -> plugin] >> 0: IComponent::getBusInfo(type = 0, dir = 0, index = 0, &bus)
+19:18:42 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk, <BusInfo for "Main In" with 2 channels, type = 0, flags = 1>
+19:18:42 [Melodyne-6GHSZaho] [host -> plugin] >> 0: IComponent::getBusCount(type = 0, dir = 1)
+19:18:42 [Melodyne-6GHSZaho] [host <- plugin]    1
+19:18:42 [Melodyne-6GHSZaho] [host -> plugin] >> 0: IComponent::getBusInfo(type = 0, dir = 1, index = 0, &bus)
+19:18:42 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk, <BusInfo for "Main Out" with 2 channels, type = 0, flags = 1>
+19:18:42 [Melodyne-6GHSZaho] [host -> plugin] >> 0: IPluginBase::terminate()
+19:18:42 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk
+19:18:42 [Melodyne-6GHSZaho] [host -> plugin] >> 0: FUnknown::~FUnknown()
+19:18:42 [Melodyne-6GHSZaho] [host <- plugin]    ACK
+19:18:42 [Melodyne-6GHSZaho] [host -> plugin] >> IPluginFactory::createInstance(cid = {0x5653544D, 0x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj)
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:18:42 [Melodyne-6GHSZaho] [host <- plugin]    <FUnknown* #1>
+19:18:42 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:18:42 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IPluginBase::initialize(context = <FUnknown*>)
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
+19:18:43 [Melodyne-6GHSZaho] [plugin -> host] >> 1: IHostApplication::getName(&name)
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
+19:18:43 [Melodyne-6GHSZaho] [plugin <- host]    kResultOk, "libcarla_standalone2"
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCC0B7716, 0x362B4EE5, 0x89EE5F41, 0x5458463F}
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xEEC89683, 0x80DB4336, 0x9177273E, 0x138A763B}
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk
+19:18:43 [Melodyne-6GHSZaho] [query interface] In FUnknown::queryInterface(): {0x42043F99, 0xB7DA453C, 0xA569E79D, 0x9AAEC33D}
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IComponent::getBusCount(type = 0, dir = 0)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    1
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IComponent::getBusInfo(type = 0, dir = 0, index = 0, &bus)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk, <BusInfo for "Main In" with 2 channels, type = 0, flags = 1>
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IAudioProcessor::getBusArrangement(dir = 0, index = 0, &arr)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk, <SpeakerArrangement: 0b0000000000000000000000000000000000000000000000000000000000000011>
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IComponent::getBusCount(type = 0, dir = 1)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    1
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IComponent::getBusInfo(type = 0, dir = 1, index = 0, &bus)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk, <BusInfo for "Main Out" with 2 channels, type = 0, flags = 1>
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IAudioProcessor::getBusArrangement(dir = 1, index = 0, &arr)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk, <SpeakerArrangement: 0b0000000000000000000000000000000000000000000000000000000000000011>
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IComponent::getBusCount(type = 1, dir = 0)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    0
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IComponent::getBusCount(type = 1, dir = 1)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    0
+19:18:43 [Melodyne-6GHSZaho] [query interface] In FUnknown::queryInterface(): {0xDCD7BBE3, 0x7742448D, 0xA874AACC, 0x979C759E}
+19:18:43 [Melodyne-6GHSZaho] [query interface] In FUnknown::queryInterface(): {0xDCD7BBE3, 0x7742448D, 0xA874AACC, 0x979C759E}
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: IEditController::setComponentHandler(handler = <IComponentHandler*>)
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    kResultOk
+19:18:43 [Melodyne-6GHSZaho] [query interface] In FUnknown::queryInterface(): {0x42043F99, 0xB7DA453C, 0xA569E79D, 0x9AAEC33D}
+19:18:43 [Melodyne-6GHSZaho] [query interface] In FUnknown::queryInterface(): {0x3D4BD6B5, 0x913A4FD2, 0xA886E768, 0xA5EB92C1}
+19:18:43 [Melodyne-6GHSZaho] [query interface] In FUnknown::queryInterface(): {0x8683B01F, 0x7B354F70, 0xA2651DEC, 0x353AF4FF}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0x6C389611, 0xD391455D, 0xB870B833, 0x94A0EFDD}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0x7F4EFE59, 0xF3204967, 0xAC27A3AE, 0xAFB63038}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0xDF0FF9F7, 0x49B74669, 0xB63AB732, 0x7ADBF5E5}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0x93A0BEA3, 0x0BD045DB, 0x8E890B0C, 0xC1E46AC6}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0xF040B4B3, 0xA36045EC, 0xABCDC045, 0xB4D5A2CC}
+19:18:43 [Melodyne-6GHSZaho] [query interface] In FUnknown::queryInterface(): {0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0x6C389611, 0xD391455D, 0xB870B833, 0x94A0EFDD}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0x7F4EFE59, 0xF3204967, 0xAC27A3AE, 0xAFB63038}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0xDF0FF9F7, 0x49B74669, 0xB63AB732, 0x7ADBF5E5}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0x93A0BEA3, 0x0BD045DB, 0x8E890B0C, 0xC1E46AC6}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0xF040B4B3, 0xA36045EC, 0xABCDC045, 0xB4D5A2CC}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0x70A4156F, 0x6E6E4026, 0x989148BF, 0xAA60D8D1}
+19:18:43 [Melodyne-6GHSZaho] [unknown interface] In FUnknown::queryInterface(): {0x70A4156F, 0x6E6E4026, 0x989148BF, 0xAA60D8D1}
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: ARA::IPlugInEntryPoint::getFactory()
+19:18:43 [Melodyne-6GHSZaho] [host <- plugin]    supported
+19:18:43 [Melodyne-6GHSZaho] NOTE: ARA::IPlugInEntryPoint::bindToDocumentController() called — forwarding to Windows plugin via IPC
+19:18:43 [Melodyne-6GHSZaho] [host -> plugin] >> 1: ARA::IPlugInEntryPoint::bindToDocumentController(documentControllerRef = 0x1)
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] [unknown interface] In IComponentHandler::queryInterface(): {0x483E61EA, 0x17994494, 0x8199A35A, 0xEBB35E3C}
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] NOTE: BindToDocumentController handler entered on Wine side (documentControllerRef = 1)
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] NOTE: BindToDocumentController: CreateThread lambda started
+19:18:43 [Melodyne-6GHSZaho] [Wine STDERR] NOTE: BindToDocumentController: calling createDocumentControllerWithDocument()
