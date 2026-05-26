@@ -887,41 +887,68 @@ void Vst3Bridge::run() {
             },
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {
-                return main_context_
-                    .run_in_context([&]() -> Ack {
+                // Melodyne's initializeARAWithConfiguration() has a deep call
+                // stack that overflows the default Wine thread stack (~64KB).
+                // We use the same large-stack CreateThread pattern as
+                // CreateDocumentController to avoid the stack overflow.
+                std::promise<void> done_promise;
+                auto done_future = done_promise.get_future();
+
+                auto init_fn = fu2::unique_function<void()>(
+                    [&, promise = std::move(done_promise)]() mutable {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
                         Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
                             entry_point(instance.object);
                         if (!entry_point) {
-                            return Ack{};
+                            promise.set_value();
+                            return;
                         }
 
                         const ARA::ARAFactory* factory =
                             entry_point->getFactory();
                         if (!factory ||
                             !factory->initializeARAWithConfiguration) {
-                            return Ack{};
+                            promise.set_value();
+                            return;
                         }
 
                         if (!request.config.has_config) {
                             factory->initializeARAWithConfiguration(nullptr);
-                            return Ack{};
+                            promise.set_value();
+                            return;
                         }
 
                         ARA::ARAInterfaceConfiguration config{};
                         config.structSize =
                             request.config.struct_size
-                                ? static_cast<ARA::ARASize>(request.config.struct_size)
-                                : static_cast<ARA::ARASize>(ARA::kARAInterfaceConfigurationMinSize);
+                                ? static_cast<ARA::ARASize>(
+                                      request.config.struct_size)
+                                : static_cast<ARA::ARASize>(
+                                      ARA::kARAInterfaceConfigurationMinSize);
                         config.desiredApiGeneration =
                             request.config.desired_api_generation;
                         config.assertFunctionAddress = nullptr;
                         factory->initializeARAWithConfiguration(&config);
 
-                        return Ack{};
-                    })
-                    .get();
+                        promise.set_value();
+                    });
+
+                constexpr SIZE_T ara_init_stack_size = 32 * 1024 * 1024;
+                HANDLE thread_handle = CreateThread(
+                    nullptr, ara_init_stack_size,
+                    reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                        win32_thread_trampoline),
+                    new fu2::unique_function<void()>(std::move(init_fn)),
+                    0, nullptr);
+
+                if (thread_handle) {
+                    WaitForSingleObject(thread_handle, INFINITE);
+                    CloseHandle(thread_handle);
+                }
+
+                done_future.get();
+                return Ack{};
             },
             [&](const YaARAFactory::Uninitialize& request)
                 -> YaARAFactory::Uninitialize::Response {
