@@ -55,9 +55,12 @@ Vst3PlugViewInterfaces::Vst3PlugViewInterfaces(
 // ---------------------------------------------------------------------------
 // WineARADocumentControllerHostInstance — static stub implementations
 //
-// Each stub recovers the proxy pointer from the host ref (which we set to
-// `reinterpret_cast<native_size_t>(this)` in the constructor), then forwards
-// the call to Carla via IPC using the captured Linux-side host refs.
+// IMPORTANT: These stubs are called synchronously by the Windows plugin
+// during createDocumentControllerWithDocument(), which itself is called
+// from within the BindToDocumentController IPC handler. The plugin side
+// is blocked waiting for BindToDocumentController to return, so any
+// attempt to send IPC messages back (bridge_->send_message) would
+// deadlock. All stubs must return safe values immediately without IPC.
 // ---------------------------------------------------------------------------
 
 namespace {
@@ -76,146 +79,97 @@ static WineARADocumentControllerHostInstance* proxy_from_archiving_ref(
         static_cast<native_size_t>(reinterpret_cast<uintptr_t>(ref)));
 }
 
-// ARAAudioAccessControllerInterface stubs
+// ARAAudioAccessControllerInterface stubs — non-blocking, safe stub values.
 
 static ARA::ARAAudioReaderHostRef ARA_CALL
 ara_create_audio_reader(ARA::ARAAudioAccessControllerHostRef ref,
-                        ARA::ARAAudioSourceHostRef source_ref,
-                        ARA::ARABool use_64bit) {
+                        ARA::ARAAudioSourceHostRef /*source_ref*/,
+                        ARA::ARABool /*use_64bit*/) {
     auto* proxy = proxy_from_audio_ref(ref);
-    const native_size_t result =
-        proxy->bridge_->send_message(YaARAHostCallbacks::CreateAudioReaderForSource{
-            .instance_id = proxy->instance_id_,
-            .audio_access_controller_host_ref =
-                proxy->audio_access_controller_host_ref_,
-            .audio_source_host_ref =
-                reinterpret_cast<native_size_t>(source_ref),
-            .use_64bit_samples = use_64bit,
-        });
+    proxy->bridge_->logger_.log(
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "createAudioReaderForSource() called during init — returning stub");
+    // Return a non-null sentinel so the plugin doesn't treat it as an error.
     return reinterpret_cast<ARA::ARAAudioReaderHostRef>(
-        static_cast<uintptr_t>(result));
+        static_cast<uintptr_t>(1));
 }
 
 static ARA::ARABool ARA_CALL
 ara_read_audio_samples(ARA::ARAAudioAccessControllerHostRef ref,
-                       ARA::ARAAudioReaderHostRef reader_ref,
-                       ARA::ARASamplePosition sample_pos,
-                       ARA::ARASampleCount samples_per_channel,
+                       ARA::ARAAudioReaderHostRef /*reader_ref*/,
+                       ARA::ARASamplePosition /*sample_pos*/,
+                       ARA::ARASampleCount /*samples_per_channel*/,
                        void* const /*buffers*/[]) {
-    // Full audio proxying requires shared memory and is deferred.
-    // Return kARAFalse (I/O error) so the plugin handles it gracefully.
     auto* proxy = proxy_from_audio_ref(ref);
     proxy->bridge_->logger_.log(
-        "WARNING: WineARADocumentControllerHostInstance: "
-        "readAudioSamples() called — audio proxying not yet implemented, "
-        "returning kARAFalse");
-    (void)reader_ref;
-    (void)sample_pos;
-    (void)samples_per_channel;
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "readAudioSamples() called during init — returning kARAFalse");
     return ARA::kARAFalse;
 }
 
 static void ARA_CALL
 ara_destroy_audio_reader(ARA::ARAAudioAccessControllerHostRef ref,
-                         ARA::ARAAudioReaderHostRef reader_ref) {
+                         ARA::ARAAudioReaderHostRef /*reader_ref*/) {
     auto* proxy = proxy_from_audio_ref(ref);
-    proxy->bridge_->send_message(YaARAHostCallbacks::DestroyAudioReader{
-        .instance_id = proxy->instance_id_,
-        .audio_access_controller_host_ref =
-            proxy->audio_access_controller_host_ref_,
-        .audio_reader_host_ref =
-            reinterpret_cast<native_size_t>(reader_ref),
-    });
+    proxy->bridge_->logger_.log(
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "destroyAudioReader() called during init — no-op");
 }
 
-// ARAArchivingControllerInterface stubs
+// ARAArchivingControllerInterface stubs — non-blocking, safe stub values.
 
 static ARA::ARASize ARA_CALL
 ara_get_archive_size(ARA::ARAArchivingControllerHostRef ref,
-                     ARA::ARAArchiveReaderHostRef reader_ref) {
+                     ARA::ARAArchiveReaderHostRef /*reader_ref*/) {
     auto* proxy = proxy_from_archiving_ref(ref);
-    const uint64_t size =
-        proxy->bridge_->send_message(YaARAHostCallbacks::GetArchiveSize{
-            .instance_id = proxy->instance_id_,
-            .archiving_controller_host_ref =
-                proxy->archiving_controller_host_ref_,
-            .archive_reader_host_ref =
-                reinterpret_cast<native_size_t>(reader_ref),
-        });
-    return static_cast<ARA::ARASize>(size);
+    proxy->bridge_->logger_.log(
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "getArchiveSize() called during init — returning 0");
+    return static_cast<ARA::ARASize>(0);
 }
 
 static ARA::ARABool ARA_CALL
 ara_read_bytes_from_archive(ARA::ARAArchivingControllerHostRef ref,
-                            ARA::ARAArchiveReaderHostRef reader_ref,
-                            ARA::ARASize position,
-                            ARA::ARASize length,
-                            ARA::ARAByte buffer[]) {
+                            ARA::ARAArchiveReaderHostRef /*reader_ref*/,
+                            ARA::ARASize /*position*/,
+                            ARA::ARASize /*length*/,
+                            ARA::ARAByte* /*buffer*/) {
     auto* proxy = proxy_from_archiving_ref(ref);
-    YaARAHostCallbacks::ReadBytesFromArchive request{
-        .instance_id = proxy->instance_id_,
-        .archiving_controller_host_ref =
-            proxy->archiving_controller_host_ref_,
-        .archive_reader_host_ref =
-            reinterpret_cast<native_size_t>(reader_ref),
-        .position = static_cast<uint64_t>(position),
-        .length = static_cast<uint64_t>(length),
-        .buffer = {},
-    };
-    const ARA::ARABool result =
-        proxy->bridge_->send_message(std::move(request));
-    // The response buffer is filled by the plugin side handler and returned
-    // in the response object — copy it into the caller's buffer.
-    // NOTE: The send_message overload for ReadBytesFromArchive must be
-    // specialised to return the buffer; for now we return the bool only and
-    // leave buffer filling as a follow-up.
-    (void)buffer;
-    return result;
+    proxy->bridge_->logger_.log(
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "readBytesFromArchive() called during init — returning kARAFalse");
+    return ARA::kARAFalse;
 }
 
 static ARA::ARABool ARA_CALL
 ara_write_bytes_to_archive(ARA::ARAArchivingControllerHostRef ref,
-                           ARA::ARAArchiveWriterHostRef writer_ref,
-                           ARA::ARASize position,
-                           ARA::ARASize length,
-                           const ARA::ARAByte buffer[]) {
+                           ARA::ARAArchiveWriterHostRef /*writer_ref*/,
+                           ARA::ARASize /*position*/,
+                           ARA::ARASize /*length*/,
+                           const ARA::ARAByte* /*buffer*/) {
     auto* proxy = proxy_from_archiving_ref(ref);
-    YaARAHostCallbacks::WriteBytesToArchive request{
-        .instance_id = proxy->instance_id_,
-        .archiving_controller_host_ref =
-            proxy->archiving_controller_host_ref_,
-        .archive_writer_host_ref =
-            reinterpret_cast<native_size_t>(writer_ref),
-        .position = static_cast<uint64_t>(position),
-        .buffer = std::vector<uint8_t>(buffer, buffer + length),
-    };
-    return proxy->bridge_->send_message(std::move(request));
+    proxy->bridge_->logger_.log(
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "writeBytesToArchive() called during init — returning kARAFalse");
+    return ARA::kARAFalse;
 }
 
 static void ARA_CALL
 ara_notify_archiving_progress(ARA::ARAArchivingControllerHostRef ref,
-                              float value) {
+                              float /*value*/) {
     auto* proxy = proxy_from_archiving_ref(ref);
-    proxy->bridge_->send_message(
-        YaARAHostCallbacks::NotifyDocumentArchivingProgress{
-            .instance_id = proxy->instance_id_,
-            .archiving_controller_host_ref =
-                proxy->archiving_controller_host_ref_,
-            .value = value,
-        });
+    proxy->bridge_->logger_.log(
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "notifyDocumentArchivingProgress() called during init — no-op");
 }
 
 static void ARA_CALL
 ara_notify_unarchiving_progress(ARA::ARAArchivingControllerHostRef ref,
-                                float value) {
+                                float /*value*/) {
     auto* proxy = proxy_from_archiving_ref(ref);
-    proxy->bridge_->send_message(
-        YaARAHostCallbacks::NotifyDocumentUnarchivingProgress{
-            .instance_id = proxy->instance_id_,
-            .archiving_controller_host_ref =
-                proxy->archiving_controller_host_ref_,
-            .value = value,
-        });
+    proxy->bridge_->logger_.log(
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "notifyDocumentUnarchivingProgress() called during init — no-op");
 }
 
 }  // namespace
