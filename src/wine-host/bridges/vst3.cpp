@@ -513,8 +513,8 @@ void Vst3Bridge::run() {
                             promise.set_value(true);
                         });
 
-                    // 8MB stack — Melodyne's init path needs more than 1MB.
-                    constexpr SIZE_T ara_stack_size = 8 * 1024 * 1024;
+                    // 32MB stack — Melodyne's init path needs more than 8MB.
+                    constexpr SIZE_T ara_stack_size = 32 * 1024 * 1024;
                     HANDLE thread_handle = CreateThread(
                         nullptr,
                         ara_stack_size,
