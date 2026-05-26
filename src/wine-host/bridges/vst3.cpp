@@ -555,8 +555,10 @@ void Vst3Bridge::run() {
                                     p.set_value(ctrl);
                                 });
 
+                            // 32MB stack — same as outer thread, Melodyne needs it.
+                            constexpr SIZE_T inner_stack = 32 * 1024 * 1024;
                             HANDLE inner_handle = CreateThread(
-                                nullptr, 0,
+                                nullptr, inner_stack,
                                 reinterpret_cast<LPTHREAD_START_ROUTINE>(
                                     win32_thread_trampoline),
                                 new fu2::unique_function<void()>(
@@ -732,8 +734,10 @@ void Vst3Bridge::run() {
                                     p.set_value(ctrl);
                                 });
 
+                            // 32MB stack — same as outer thread, Melodyne needs it.
+                            constexpr SIZE_T inner_stack = 32 * 1024 * 1024;
                             HANDLE inner_handle = CreateThread(
-                                nullptr, 0,
+                                nullptr, inner_stack,
                                 reinterpret_cast<LPTHREAD_START_ROUTINE>(
                                     win32_thread_trampoline),
                                 new fu2::unique_function<void()>(
@@ -1009,8 +1013,10 @@ void Vst3Bridge::run() {
                                 p.set_value(ctrl);
                             });
 
+                        // 32MB stack — Melodyne needs it.
+                        constexpr SIZE_T inner_stack = 32 * 1024 * 1024;
                         HANDLE inner_handle = CreateThread(
-                            nullptr, 0,
+                            nullptr, inner_stack,
                             reinterpret_cast<LPTHREAD_START_ROUTINE>(
                                 win32_thread_trampoline),
                             new fu2::unique_function<void()>(
