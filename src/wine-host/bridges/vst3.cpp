@@ -17,6 +17,7 @@
 #include "vst3.h"
 
 #include <bitset>
+#include <cstring>
 #include <future>
 
 #include "vst3-impls/component-handler-proxy.h"
@@ -79,41 +80,71 @@ static WineARADocumentControllerHostInstance* proxy_from_archiving_ref(
         static_cast<native_size_t>(reinterpret_cast<uintptr_t>(ref)));
 }
 
-// ARAAudioAccessControllerInterface stubs — non-blocking, safe stub values.
+// ARAAudioAccessControllerInterface stubs — forward via IPC to Carla.
 
 static ARA::ARAAudioReaderHostRef ARA_CALL
 ara_create_audio_reader(ARA::ARAAudioAccessControllerHostRef ref,
-                        ARA::ARAAudioSourceHostRef /*source_ref*/,
-                        ARA::ARABool /*use_64bit*/) {
+                        ARA::ARAAudioSourceHostRef source_ref,
+                        ARA::ARABool use_64bit) {
     auto* proxy = proxy_from_audio_ref(ref);
     proxy->bridge_->logger_.log(
         "NOTE: WineARADocumentControllerHostInstance: "
-        "createAudioReaderForSource() called during init — returning stub");
-    // Return a non-null sentinel so the plugin doesn't treat it as an error.
+        "createAudioReaderForSource() called — forwarding via IPC");
+    const native_size_t result =
+        proxy->bridge_->send_message(YaARAHostCallbacks::CreateAudioReaderForSource{
+            .instance_id = proxy->instance_id_,
+            .audio_access_controller_host_ref =
+                proxy->audio_access_controller_host_ref_,
+            .audio_source_host_ref =
+                reinterpret_cast<native_size_t>(source_ref),
+            .use_64bit_samples = use_64bit,
+        });
+    proxy->bridge_->logger_.log(
+        "NOTE: WineARADocumentControllerHostInstance: "
+        "createAudioReaderForSource() returned " + std::to_string(result));
     return reinterpret_cast<ARA::ARAAudioReaderHostRef>(
-        static_cast<uintptr_t>(1));
+        static_cast<uintptr_t>(result ? result : 1));
 }
 
 static ARA::ARABool ARA_CALL
 ara_read_audio_samples(ARA::ARAAudioAccessControllerHostRef ref,
                        ARA::ARAAudioReaderHostRef /*reader_ref*/,
                        ARA::ARASamplePosition /*sample_pos*/,
-                       ARA::ARASampleCount /*samples_per_channel*/,
-                       void* const /*buffers*/[]) {
+                       ARA::ARASampleCount samples_per_channel,
+                       void* const buffers[]) {
     auto* proxy = proxy_from_audio_ref(ref);
     proxy->bridge_->logger_.log(
         "NOTE: WineARADocumentControllerHostInstance: "
-        "readAudioSamples() called during init — returning kARAFalse");
-    return ARA::kARAFalse;
+        "readAudioSamples() called — returning silence (kARATrue)");
+    // Zero the output buffers so Melodyne gets valid (silent) audio data
+    // and doesn't abort createDocumentControllerWithDocument().
+    // We don't know the channel count here, but Melodyne typically uses
+    // stereo (2 channels). Zero up to 8 channels defensively.
+    if (buffers && samples_per_channel > 0) {
+        for (int ch = 0; ch < 8; ++ch) {
+            if (!buffers[ch]) break;
+            std::memset(buffers[ch], 0,
+                        static_cast<size_t>(samples_per_channel) *
+                            sizeof(float));
+        }
+    }
+    return ARA::kARATrue;
 }
 
 static void ARA_CALL
 ara_destroy_audio_reader(ARA::ARAAudioAccessControllerHostRef ref,
-                         ARA::ARAAudioReaderHostRef /*reader_ref*/) {
+                         ARA::ARAAudioReaderHostRef reader_ref) {
     auto* proxy = proxy_from_audio_ref(ref);
     proxy->bridge_->logger_.log(
         "NOTE: WineARADocumentControllerHostInstance: "
-        "destroyAudioReader() called during init — no-op");
+        "destroyAudioReader() called — forwarding via IPC");
+    proxy->bridge_->send_message(YaARAHostCallbacks::DestroyAudioReader{
+        .instance_id = proxy->instance_id_,
+        .audio_access_controller_host_ref =
+            proxy->audio_access_controller_host_ref_,
+        .audio_reader_host_ref =
+            reinterpret_cast<native_size_t>(reader_ref),
+    });
 }
 
 // ARAArchivingControllerInterface stubs — non-blocking, safe stub values.
@@ -177,8 +208,11 @@ ara_notify_unarchiving_progress(ARA::ARAArchivingControllerHostRef ref,
 WineARADocumentControllerHostInstance::WineARADocumentControllerHostInstance(
     const ARA::ARADocumentControllerHostInstance* linux_host_instance,
     size_t instance_id,
-    Vst3Bridge& bridge) noexcept
-    : instance_id_(instance_id), bridge_(&bridge) {
+    Vst3Bridge& bridge,
+    native_size_t carla_document_controller_ref) noexcept
+    : instance_id_(instance_id),
+      bridge_(&bridge),
+      carla_document_controller_ref_(carla_document_controller_ref) {
     // Capture the Linux-side host refs as opaque integers.
     if (linux_host_instance) {
         audio_access_controller_host_ref_ = reinterpret_cast<native_size_t>(
@@ -428,11 +462,158 @@ void Vst3Bridge::run() {
                     "NOTE: BindToDocumentController handler entered on Wine "
                     "side (documentControllerRef = " +
                     std::to_string(request.document_controller_ref) + ")");
-                // The document controller was already created by the
-                // YaARAFactory::CreateDocumentController handler when Carla
-                // called factory->createDocumentControllerWithDocument().
-                // ara_document_controller_instance is already set.
-                // Just call bindToDocumentController with the Wine-side ref.
+                // Carla calls bindToDocumentController() directly without
+                // first calling createDocumentControllerWithDocument() on our
+                // proxy. We must call createDocumentControllerWithDocument()
+                // here ourselves, using a stub host instance whose callbacks
+                // return safe values (silence for audio, no-ops for archiving).
+                // The nested-thread + message-pump pattern is required because
+                // Melodyne posts Win32 messages to itself during init.
+                if (!get_instance(request.instance_id)
+                         .first.ara_document_controller_instance) {
+                    std::promise<bool> created_promise;
+                    auto created_future = created_promise.get_future();
+
+                    auto create_fn = fu2::unique_function<void()>(
+                        [&, promise = std::move(created_promise)]() mutable {
+                            logger_.log(
+                                "NOTE: BindToDocumentController: "
+                                "CreateThread lambda started");
+                            const auto& [instance, _] =
+                                get_instance(request.instance_id);
+
+                            Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                                entry_point(instance.object);
+                            if (!entry_point) {
+                                promise.set_value(false);
+                                return;
+                            }
+
+                            const ARA::ARAFactory* factory =
+                                entry_point->getFactory();
+                            if (!factory ||
+                                !factory
+                                     ->createDocumentControllerWithDocument) {
+                                logger_.log(
+                                    "WARNING: BindToDocumentController: "
+                                    "factory has no "
+                                    "createDocumentControllerWithDocument");
+                                promise.set_value(false);
+                                return;
+                            }
+
+                            // Create a stub host instance. The stubs return
+                            // silence for audio reads (kARATrue + zeroed
+                            // buffers) so Melodyne doesn't abort init.
+                            // Pass carla's documentControllerRef as the
+                            // routing key for IPC callbacks.
+                            instance.ara_document_controller_host_instance =
+                                std::make_unique<
+                                    WineARADocumentControllerHostInstance>(
+                                    nullptr,
+                                    request.instance_id,
+                                    *this,
+                                    request.document_controller_ref);
+
+                            ARA::ARADocumentProperties props{};
+                            props.structSize = static_cast<ARA::ARASize>(
+                                ARA_IMPLEMENTED_STRUCT_SIZE(
+                                    ARADocumentProperties, name));
+                            props.name = nullptr;
+
+                            // Force-create a message queue on this thread.
+                            {
+                                MSG dummy;
+                                PeekMessageW(&dummy, nullptr, 0, 0,
+                                             PM_NOREMOVE);
+                            }
+
+                            std::promise<const ARA::ARADocumentControllerInstance*>
+                                ctrl_promise;
+                            auto ctrl_future = ctrl_promise.get_future();
+
+                            auto inner_fn = fu2::unique_function<void()>(
+                                [&, p = std::move(ctrl_promise)]() mutable {
+                                    logger_.log(
+                                        "NOTE: BindToDocumentController: "
+                                        "calling "
+                                        "createDocumentControllerWithDocument()");
+                                    const ARA::ARADocumentControllerInstance*
+                                        ctrl =
+                                            factory
+                                                ->createDocumentControllerWithDocument(
+                                                    instance
+                                                        .ara_document_controller_host_instance
+                                                        ->get(),
+                                                    &props);
+                                    logger_.log(
+                                        ctrl
+                                            ? "NOTE: BindToDocumentController: "
+                                              "createDocumentControllerWithDocument() succeeded"
+                                            : "WARNING: BindToDocumentController: "
+                                              "createDocumentControllerWithDocument() returned null");
+                                    p.set_value(ctrl);
+                                });
+
+                            HANDLE inner_handle = CreateThread(
+                                nullptr, 0,
+                                reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                                    win32_thread_trampoline),
+                                new fu2::unique_function<void()>(
+                                    std::move(inner_fn)),
+                                0, nullptr);
+
+                            if (inner_handle) {
+                                DWORD wr;
+                                do {
+                                    wr = MsgWaitForMultipleObjects(
+                                        1, &inner_handle, FALSE, INFINITE,
+                                        QS_ALLINPUT);
+                                    if (wr == WAIT_OBJECT_0 + 1) {
+                                        MSG msg;
+                                        while (PeekMessageW(&msg, nullptr, 0,
+                                                            0, PM_REMOVE)) {
+                                            TranslateMessage(&msg);
+                                            DispatchMessageW(&msg);
+                                        }
+                                    }
+                                } while (wr != WAIT_OBJECT_0 &&
+                                         wr != WAIT_FAILED);
+                                CloseHandle(inner_handle);
+                            }
+
+                            const ARA::ARADocumentControllerInstance* ctrl =
+                                ctrl_future.get();
+
+                            if (!ctrl) {
+                                instance.ara_document_controller_host_instance
+                                    .reset();
+                                promise.set_value(false);
+                                return;
+                            }
+
+                            instance.ara_document_controller_instance = ctrl;
+                            promise.set_value(true);
+                        });
+
+                    constexpr SIZE_T ara_stack_size = 32 * 1024 * 1024;
+                    HANDLE thread_handle = CreateThread(
+                        nullptr, ara_stack_size,
+                        reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                            win32_thread_trampoline),
+                        new fu2::unique_function<void()>(std::move(create_fn)),
+                        0, nullptr);
+
+                    if (thread_handle) {
+                        WaitForSingleObject(thread_handle, INFINITE);
+                        CloseHandle(thread_handle);
+                    }
+
+                    if (!created_future.get()) {
+                        return PrimitiveResponse<native_size_t>(0);
+                    }
+                }
+
                 return do_mutual_recursion_on_gui_thread(
                     [&]() -> PrimitiveResponse<native_size_t> {
                         const auto& [instance, _] =
@@ -488,8 +669,128 @@ void Vst3Bridge::run() {
                     "NOTE: BindToDocumentControllerWithRoles handler entered "
                     "on Wine side (documentControllerRef = " +
                     std::to_string(request.document_controller_ref) + ")");
-                // The document controller was already created by
-                // YaARAFactory::CreateDocumentController. Just bind.
+                // Same pattern as BindToDocumentController above.
+                if (!get_instance(request.instance_id)
+                         .first.ara_document_controller_instance) {
+                    std::promise<bool> created_promise;
+                    auto created_future = created_promise.get_future();
+
+                    auto create_fn = fu2::unique_function<void()>(
+                        [&, promise = std::move(created_promise)]() mutable {
+                            const auto& [instance, _] =
+                                get_instance(request.instance_id);
+
+                            Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                                ep(instance.object);
+                            if (!ep) {
+                                promise.set_value(false);
+                                return;
+                            }
+
+                            const ARA::ARAFactory* factory = ep->getFactory();
+                            if (!factory ||
+                                !factory
+                                     ->createDocumentControllerWithDocument) {
+                                promise.set_value(false);
+                                return;
+                            }
+
+                            instance.ara_document_controller_host_instance =
+                                std::make_unique<
+                                    WineARADocumentControllerHostInstance>(
+                                    nullptr,
+                                    request.instance_id,
+                                    *this,
+                                    request.document_controller_ref);
+
+                            ARA::ARADocumentProperties props{};
+                            props.structSize = static_cast<ARA::ARASize>(
+                                ARA_IMPLEMENTED_STRUCT_SIZE(
+                                    ARADocumentProperties, name));
+                            props.name = nullptr;
+
+                            {
+                                MSG dummy;
+                                PeekMessageW(&dummy, nullptr, 0, 0,
+                                             PM_NOREMOVE);
+                            }
+
+                            std::promise<const ARA::ARADocumentControllerInstance*>
+                                ctrl_promise;
+                            auto ctrl_future = ctrl_promise.get_future();
+
+                            auto inner_fn = fu2::unique_function<void()>(
+                                [&, p = std::move(ctrl_promise)]() mutable {
+                                    const ARA::ARADocumentControllerInstance*
+                                        ctrl =
+                                            factory
+                                                ->createDocumentControllerWithDocument(
+                                                    instance
+                                                        .ara_document_controller_host_instance
+                                                        ->get(),
+                                                    &props);
+                                    p.set_value(ctrl);
+                                });
+
+                            HANDLE inner_handle = CreateThread(
+                                nullptr, 0,
+                                reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                                    win32_thread_trampoline),
+                                new fu2::unique_function<void()>(
+                                    std::move(inner_fn)),
+                                0, nullptr);
+
+                            if (inner_handle) {
+                                DWORD wr;
+                                do {
+                                    wr = MsgWaitForMultipleObjects(
+                                        1, &inner_handle, FALSE, INFINITE,
+                                        QS_ALLINPUT);
+                                    if (wr == WAIT_OBJECT_0 + 1) {
+                                        MSG msg;
+                                        while (PeekMessageW(&msg, nullptr, 0,
+                                                            0, PM_REMOVE)) {
+                                            TranslateMessage(&msg);
+                                            DispatchMessageW(&msg);
+                                        }
+                                    }
+                                } while (wr != WAIT_OBJECT_0 &&
+                                         wr != WAIT_FAILED);
+                                CloseHandle(inner_handle);
+                            }
+
+                            const ARA::ARADocumentControllerInstance* ctrl =
+                                ctrl_future.get();
+
+                            if (!ctrl) {
+                                instance.ara_document_controller_host_instance
+                                    .reset();
+                                promise.set_value(false);
+                                return;
+                            }
+
+                            instance.ara_document_controller_instance = ctrl;
+                            promise.set_value(true);
+                        });
+
+                    constexpr SIZE_T ara_stack_size = 32 * 1024 * 1024;
+                    HANDLE thread_handle = CreateThread(
+                        nullptr, ara_stack_size,
+                        reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                            win32_thread_trampoline),
+                        new fu2::unique_function<void()>(std::move(create_fn)),
+                        0, nullptr);
+
+                    if (thread_handle) {
+                        WaitForSingleObject(thread_handle, INFINITE);
+                        CloseHandle(thread_handle);
+                    }
+
+                    if (!created_future.get()) {
+                        return PrimitiveResponse<native_size_t>(0);
+                    }
+                }
+
                 return do_mutual_recursion_on_gui_thread(
                     [&]() -> PrimitiveResponse<native_size_t> {
                         const auto& [instance, _] =

@@ -130,7 +130,8 @@ struct WineARADocumentControllerHostInstance {
     WineARADocumentControllerHostInstance(
         const ARA::ARADocumentControllerHostInstance* linux_host_instance,
         size_t instance_id,
-        Vst3Bridge& bridge) noexcept;
+        Vst3Bridge& bridge,
+        native_size_t carla_document_controller_ref = 0) noexcept;
 
     /**
      * Return a pointer to the Wine-side host instance struct to pass to the
@@ -147,6 +148,11 @@ struct WineARADocumentControllerHostInstance {
     // -----------------------------------------------------------------------
     native_size_t audio_access_controller_host_ref_ = 0;
     native_size_t archiving_controller_host_ref_ = 0;
+
+    // Carla's opaque document controller ref, used as routing key for IPC
+    // callbacks when Carla calls bindToDocumentController() directly without
+    // going through createDocumentControllerWithDocument() on our proxy.
+    native_size_t carla_document_controller_ref_ = 0;
 
     // -----------------------------------------------------------------------
     // Wine-side function pointer tables.
