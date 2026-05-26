@@ -501,12 +501,70 @@ void Vst3Bridge::run() {
                                     ARADocumentProperties, name));
                             props.name = nullptr;
 
+                            // Melodyne posts Win32 messages to itself during
+                            // createDocumentControllerWithDocument(). We must
+                            // pump those messages on THIS thread (the
+                            // CreateThread thread) while the call runs on a
+                            // nested thread. Pumping on the worker thread
+                            // would steal messages from the GUI thread and
+                            // cause deadlocks in other handlers.
+                            //
+                            // Force-create a message queue on this thread
+                            // before spawning the nested thread.
+                            {
+                                MSG dummy;
+                                PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
+                            }
+
+                            std::promise<const ARA::ARADocumentControllerInstance*>
+                                ctrl_promise;
+                            auto ctrl_future = ctrl_promise.get_future();
+
+                            // Nested thread: does the actual blocking call.
+                            auto inner_fn = fu2::unique_function<void()>(
+                                [&, p = std::move(ctrl_promise)]() mutable {
+                                    const ARA::ARADocumentControllerInstance*
+                                        ctrl =
+                                            factory
+                                                ->createDocumentControllerWithDocument(
+                                                    instance
+                                                        .ara_document_controller_host_instance
+                                                        ->get(),
+                                                    &props);
+                                    p.set_value(ctrl);
+                                });
+
+                            HANDLE inner_handle = CreateThread(
+                                nullptr, 0,
+                                reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                                    win32_thread_trampoline),
+                                new fu2::unique_function<void()>(
+                                    std::move(inner_fn)),
+                                0, nullptr);
+
+                            // Pump Win32 messages on this thread while the
+                            // nested thread runs createDocumentController.
+                            if (inner_handle) {
+                                DWORD wr;
+                                do {
+                                    wr = MsgWaitForMultipleObjects(
+                                        1, &inner_handle, FALSE, INFINITE,
+                                        QS_ALLINPUT);
+                                    if (wr == WAIT_OBJECT_0 + 1) {
+                                        MSG msg;
+                                        while (PeekMessageW(&msg, nullptr, 0,
+                                                            0, PM_REMOVE)) {
+                                            TranslateMessage(&msg);
+                                            DispatchMessageW(&msg);
+                                        }
+                                    }
+                                } while (wr != WAIT_OBJECT_0 &&
+                                         wr != WAIT_FAILED);
+                                CloseHandle(inner_handle);
+                            }
+
                             const ARA::ARADocumentControllerInstance* ctrl =
-                                factory->createDocumentControllerWithDocument(
-                                    instance
-                                        .ara_document_controller_host_instance
-                                        ->get(),
-                                    &props);
+                                ctrl_future.get();
 
                             if (!ctrl) {
                                 logger_.log(
@@ -528,6 +586,13 @@ void Vst3Bridge::run() {
                         });
 
                     // 32MB stack — Melodyne's init path needs more than 8MB.
+                    // The lambda itself pumps Win32 messages on the CreateThread
+                    // thread while a nested thread does the actual
+                    // createDocumentControllerWithDocument() call. This is
+                    // necessary because Melodyne posts Win32 messages to itself
+                    // during init, and those messages must be pumped on the
+                    // same thread that will receive them (the CreateThread
+                    // thread), not on the worker thread.
                     constexpr SIZE_T ara_stack_size = 32 * 1024 * 1024;
                     HANDLE thread_handle = CreateThread(
                         nullptr,
@@ -538,31 +603,8 @@ void Vst3Bridge::run() {
                         0 /* commit full stack */,
                         nullptr);
 
-                    // Pump Win32 messages while waiting for the thread to
-                    // finish. Melodyne's createDocumentControllerWithDocument
-                    // posts Win32 messages to itself during initialisation, so
-                    // we must keep the message loop alive on this thread or it
-                    // will deadlock waiting for those messages to be processed.
                     if (thread_handle) {
-                        DWORD wait_result;
-                        do {
-                            wait_result = MsgWaitForMultipleObjects(
-                                1, &thread_handle,
-                                FALSE,       // wait for any (thread OR msg)
-                                INFINITE,
-                                QS_ALLINPUT  // wake on any queued input/message
-                            );
-                            if (wait_result == WAIT_OBJECT_0 + 1) {
-                                // A Win32 message arrived — pump it.
-                                MSG msg;
-                                while (PeekMessageW(&msg, nullptr, 0, 0,
-                                                    PM_REMOVE)) {
-                                    TranslateMessage(&msg);
-                                    DispatchMessageW(&msg);
-                                }
-                            }
-                        } while (wait_result != WAIT_OBJECT_0 &&
-                                 wait_result != WAIT_FAILED);
+                        WaitForSingleObject(thread_handle, INFINITE);
                         CloseHandle(thread_handle);
                     }
 
@@ -666,12 +708,59 @@ void Vst3Bridge::run() {
                                     ARADocumentProperties, name));
                             props.name = nullptr;
 
+                            // Same nested-thread + message-pump pattern as
+                            // BindToDocumentController above.
+                            {
+                                MSG dummy;
+                                PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
+                            }
+
+                            std::promise<const ARA::ARADocumentControllerInstance*>
+                                ctrl_promise;
+                            auto ctrl_future = ctrl_promise.get_future();
+
+                            auto inner_fn = fu2::unique_function<void()>(
+                                [&, p = std::move(ctrl_promise)]() mutable {
+                                    const ARA::ARADocumentControllerInstance*
+                                        ctrl =
+                                            factory
+                                                ->createDocumentControllerWithDocument(
+                                                    instance
+                                                        .ara_document_controller_host_instance
+                                                        ->get(),
+                                                    &props);
+                                    p.set_value(ctrl);
+                                });
+
+                            HANDLE inner_handle = CreateThread(
+                                nullptr, 0,
+                                reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                                    win32_thread_trampoline),
+                                new fu2::unique_function<void()>(
+                                    std::move(inner_fn)),
+                                0, nullptr);
+
+                            if (inner_handle) {
+                                DWORD wr;
+                                do {
+                                    wr = MsgWaitForMultipleObjects(
+                                        1, &inner_handle, FALSE, INFINITE,
+                                        QS_ALLINPUT);
+                                    if (wr == WAIT_OBJECT_0 + 1) {
+                                        MSG msg;
+                                        while (PeekMessageW(&msg, nullptr, 0,
+                                                            0, PM_REMOVE)) {
+                                            TranslateMessage(&msg);
+                                            DispatchMessageW(&msg);
+                                        }
+                                    }
+                                } while (wr != WAIT_OBJECT_0 &&
+                                         wr != WAIT_FAILED);
+                                CloseHandle(inner_handle);
+                            }
+
                             const ARA::ARADocumentControllerInstance* ctrl =
-                                factory->createDocumentControllerWithDocument(
-                                    instance
-                                        .ara_document_controller_host_instance
-                                        ->get(),
-                                    &props);
+                                ctrl_future.get();
 
                             if (!ctrl) {
                                 logger_.log(
@@ -699,23 +788,8 @@ void Vst3Bridge::run() {
                         0 /* commit full stack */,
                         nullptr);
 
-                    // Pump Win32 messages while waiting — same as above.
                     if (thread_handle) {
-                        DWORD wait_result;
-                        do {
-                            wait_result = MsgWaitForMultipleObjects(
-                                1, &thread_handle, FALSE, INFINITE,
-                                QS_ALLINPUT);
-                            if (wait_result == WAIT_OBJECT_0 + 1) {
-                                MSG msg;
-                                while (PeekMessageW(&msg, nullptr, 0, 0,
-                                                    PM_REMOVE)) {
-                                    TranslateMessage(&msg);
-                                    DispatchMessageW(&msg);
-                                }
-                            }
-                        } while (wait_result != WAIT_OBJECT_0 &&
-                                 wait_result != WAIT_FAILED);
+                        WaitForSingleObject(thread_handle, INFINITE);
                         CloseHandle(thread_handle);
                     }
 
