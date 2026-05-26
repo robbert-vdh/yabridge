@@ -538,16 +538,36 @@ void Vst3Bridge::run() {
                         0 /* commit full stack */,
                         nullptr);
 
-                    if (!created_future.get()) {
-                        if (thread_handle) {
-                            WaitForSingleObject(thread_handle, INFINITE);
-                            CloseHandle(thread_handle);
-                        }
-                        return PrimitiveResponse<native_size_t>(0);
-                    }
+                    // Pump Win32 messages while waiting for the thread to
+                    // finish. Melodyne's createDocumentControllerWithDocument
+                    // posts Win32 messages to itself during initialisation, so
+                    // we must keep the message loop alive on this thread or it
+                    // will deadlock waiting for those messages to be processed.
                     if (thread_handle) {
-                        WaitForSingleObject(thread_handle, INFINITE);
+                        DWORD wait_result;
+                        do {
+                            wait_result = MsgWaitForMultipleObjects(
+                                1, &thread_handle,
+                                FALSE,       // wait for any (thread OR msg)
+                                INFINITE,
+                                QS_ALLINPUT  // wake on any queued input/message
+                            );
+                            if (wait_result == WAIT_OBJECT_0 + 1) {
+                                // A Win32 message arrived — pump it.
+                                MSG msg;
+                                while (PeekMessageW(&msg, nullptr, 0, 0,
+                                                    PM_REMOVE)) {
+                                    TranslateMessage(&msg);
+                                    DispatchMessageW(&msg);
+                                }
+                            }
+                        } while (wait_result != WAIT_OBJECT_0 &&
+                                 wait_result != WAIT_FAILED);
                         CloseHandle(thread_handle);
+                    }
+
+                    if (!created_future.get()) {
+                        return PrimitiveResponse<native_size_t>(0);
                     }
                 }
 
@@ -679,16 +699,28 @@ void Vst3Bridge::run() {
                         0 /* commit full stack */,
                         nullptr);
 
-                    if (!created_future.get()) {
-                        if (thread_handle) {
-                            WaitForSingleObject(thread_handle, INFINITE);
-                            CloseHandle(thread_handle);
-                        }
-                        return PrimitiveResponse<native_size_t>(0);
-                    }
+                    // Pump Win32 messages while waiting — same as above.
                     if (thread_handle) {
-                        WaitForSingleObject(thread_handle, INFINITE);
+                        DWORD wait_result;
+                        do {
+                            wait_result = MsgWaitForMultipleObjects(
+                                1, &thread_handle, FALSE, INFINITE,
+                                QS_ALLINPUT);
+                            if (wait_result == WAIT_OBJECT_0 + 1) {
+                                MSG msg;
+                                while (PeekMessageW(&msg, nullptr, 0, 0,
+                                                    PM_REMOVE)) {
+                                    TranslateMessage(&msg);
+                                    DispatchMessageW(&msg);
+                                }
+                            }
+                        } while (wait_result != WAIT_OBJECT_0 &&
+                                 wait_result != WAIT_FAILED);
                         CloseHandle(thread_handle);
+                    }
+
+                    if (!created_future.get()) {
+                        return PrimitiveResponse<native_size_t>(0);
                     }
                 }
 
