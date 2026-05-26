@@ -476,6 +476,7 @@ void Vst3Bridge::run() {
 
                     auto create_fn = fu2::unique_function<void()>(
                         [&, promise = std::move(created_promise)]() mutable {
+                            OleInitialize(nullptr);
                             logger_.log(
                                 "NOTE: BindToDocumentController: "
                                 "CreateThread lambda started");
@@ -485,6 +486,7 @@ void Vst3Bridge::run() {
                             Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
                                 entry_point(instance.object);
                             if (!entry_point) {
+                                OleUninitialize();
                                 promise.set_value(false);
                                 return;
                             }
@@ -498,6 +500,7 @@ void Vst3Bridge::run() {
                                     "WARNING: BindToDocumentController: "
                                     "factory has no "
                                     "createDocumentControllerWithDocument");
+                                OleUninitialize();
                                 promise.set_value(false);
                                 return;
                             }
@@ -534,6 +537,9 @@ void Vst3Bridge::run() {
 
                             auto inner_fn = fu2::unique_function<void()>(
                                 [&, p = std::move(ctrl_promise)]() mutable {
+                                    // Initialize COM as STA on this thread so
+                                    // Melodyne's internal COM calls work.
+                                    OleInitialize(nullptr);
                                     logger_.log(
                                         "NOTE: BindToDocumentController: "
                                         "calling "
@@ -552,6 +558,7 @@ void Vst3Bridge::run() {
                                               "createDocumentControllerWithDocument() succeeded"
                                             : "WARNING: BindToDocumentController: "
                                               "createDocumentControllerWithDocument() returned null");
+                                    OleUninitialize();
                                     p.set_value(ctrl);
                                 });
 
@@ -590,11 +597,13 @@ void Vst3Bridge::run() {
                             if (!ctrl) {
                                 instance.ara_document_controller_host_instance
                                     .reset();
+                                OleUninitialize();
                                 promise.set_value(false);
                                 return;
                             }
 
                             instance.ara_document_controller_instance = ctrl;
+                            OleUninitialize();
                             promise.set_value(true);
                         });
 
@@ -679,12 +688,14 @@ void Vst3Bridge::run() {
 
                     auto create_fn = fu2::unique_function<void()>(
                         [&, promise = std::move(created_promise)]() mutable {
+                            OleInitialize(nullptr);
                             const auto& [instance, _] =
                                 get_instance(request.instance_id);
 
                             Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
                                 ep(instance.object);
                             if (!ep) {
+                                OleUninitialize();
                                 promise.set_value(false);
                                 return;
                             }
@@ -693,6 +704,7 @@ void Vst3Bridge::run() {
                             if (!factory ||
                                 !factory
                                      ->createDocumentControllerWithDocument) {
+                                OleUninitialize();
                                 promise.set_value(false);
                                 return;
                             }
@@ -723,6 +735,7 @@ void Vst3Bridge::run() {
 
                             auto inner_fn = fu2::unique_function<void()>(
                                 [&, p = std::move(ctrl_promise)]() mutable {
+                                    OleInitialize(nullptr);
                                     const ARA::ARADocumentControllerInstance*
                                         ctrl =
                                             factory
@@ -731,6 +744,7 @@ void Vst3Bridge::run() {
                                                         .ara_document_controller_host_instance
                                                         ->get(),
                                                     &props);
+                                    OleUninitialize();
                                     p.set_value(ctrl);
                                 });
 
@@ -769,11 +783,13 @@ void Vst3Bridge::run() {
                             if (!ctrl) {
                                 instance.ara_document_controller_host_instance
                                     .reset();
+                                OleUninitialize();
                                 promise.set_value(false);
                                 return;
                             }
 
                             instance.ara_document_controller_instance = ctrl;
+                            OleUninitialize();
                             promise.set_value(true);
                         });
 
@@ -952,6 +968,7 @@ void Vst3Bridge::run() {
                             logger_.log(
                                 "WARNING: CreateDocumentController: instance "
                                 "does not support ARA::IPlugInEntryPoint");
+                            OleUninitialize();
                             promise.set_value(0);
                             return;
                         }
@@ -963,6 +980,7 @@ void Vst3Bridge::run() {
                             logger_.log(
                                 "WARNING: CreateDocumentController: factory "
                                 "has no createDocumentControllerWithDocument");
+                            OleUninitialize();
                             promise.set_value(0);
                             return;
                         }
@@ -1003,6 +1021,7 @@ void Vst3Bridge::run() {
 
                         auto inner_fn = fu2::unique_function<void()>(
                             [&, p = std::move(ctrl_promise)]() mutable {
+                                OleInitialize(nullptr);
                                 const ARA::ARADocumentControllerInstance* ctrl =
                                     factory
                                         ->createDocumentControllerWithDocument(
@@ -1010,6 +1029,7 @@ void Vst3Bridge::run() {
                                                 .ara_document_controller_host_instance
                                                 ->get(),
                                             &props);
+                                OleUninitialize();
                                 p.set_value(ctrl);
                             });
 
@@ -1052,6 +1072,7 @@ void Vst3Bridge::run() {
                                 "ARADocumentControllerInstance");
                             instance.ara_document_controller_host_instance
                                 .reset();
+                            OleUninitialize();
                             promise.set_value(0);
                             return;
                         }
@@ -1059,6 +1080,7 @@ void Vst3Bridge::run() {
                         instance.ara_document_controller_instance = ctrl;
                         logger_.log(
                             "NOTE: CreateDocumentController: succeeded");
+                        OleUninitialize();
                         promise.set_value(reinterpret_cast<native_size_t>(ctrl));
                     });
 
