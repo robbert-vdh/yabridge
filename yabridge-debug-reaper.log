@@ -1,54 +1,54 @@
-19:00:07 [Melodyne-4BUWYmty] Initializing yabridge version fc890dfa
-19:00:07 [Melodyne-4BUWYmty] library:       '/home/samuel/.local/share/yabridge/libyabridge-vst3.so'
-19:00:07 [Melodyne-4BUWYmty] host:          '/home/samuel/.local/share/yabridge/yabridge-host.exe'
-19:00:07 [Melodyne-4BUWYmty] plugin:        '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
-19:00:07 [Melodyne-4BUWYmty] plugin type:   'VST3'
-19:00:07 [Melodyne-4BUWYmty] realtime:      'no'
-19:00:07 [Melodyne-4BUWYmty] sockets:       '/run/user/1000/yabridge-Melodyne-4BUWYmty'
-19:00:07 [Melodyne-4BUWYmty] wine prefix:   '/home/samuel/.wine'
-19:00:07 [Melodyne-4BUWYmty] wine version:  '9.0 (Ubuntu 9.0~repack-4build3)'
-19:00:07 [Melodyne-4BUWYmty] 
-19:00:07 [Melodyne-4BUWYmty] config from:   '<defaults>'
-19:00:07 [Melodyne-4BUWYmty] hosting mode:  'individually, 64-bit'
-19:00:07 [Melodyne-4BUWYmty] other options: '<none>'
-19:00:07 [Melodyne-4BUWYmty] 
-19:00:07 [Melodyne-4BUWYmty] Enabled features:
-19:00:07 [Melodyne-4BUWYmty] - bitbridge support
-19:00:07 [Melodyne-4BUWYmty] - CLAP support
-19:00:07 [Melodyne-4BUWYmty] - VST3 support
-19:00:07 [Melodyne-4BUWYmty] 
-19:00:09 [Melodyne-4BUWYmty] [Wine STDERR] Initializing yabridge host version fc890dfa
-19:00:09 [Melodyne-4BUWYmty] [Wine STDERR] Preparing to load VST3 plugin at '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
-19:00:09 [Melodyne-4BUWYmty] [host -> plugin] >> GetPluginFactory()
-19:00:09 [Melodyne-4BUWYmty] [plugin -> host] >> Requesting <Configuration>
-19:00:09 [Melodyne-4BUWYmty] [plugin <- host]    <Configuration>
-19:00:09 [Melodyne-4BUWYmty] [Wine STDERR] Finished initializing '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
-19:00:09 [Melodyne-4BUWYmty] [host <- plugin]    <IPluginFactory2* with 2 registered classes>
-19:00:09 [Melodyne-4BUWYmty] [unknown interface] In IPluginFactory::queryInterface(): {0x4555A2AB, 0xC1234E57, 0x9B122910, 0x36878931}
-19:00:09 [Melodyne-4BUWYmty] [query interface] In IPluginFactory::queryInterface(): {0x0007B650, 0xF24B4C0B, 0xA464EDB9, 0xF00B2ABB}
-19:00:09 [Melodyne-4BUWYmty] [host -> plugin] >> IPluginFactory::createInstance(cid = {0x5653544D, 0x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj)
-19:00:09 [Melodyne-4BUWYmty] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-19:00:09 [Melodyne-4BUWYmty] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-19:00:09 [Melodyne-4BUWYmty] [host <- plugin]    <FUnknown* #0>
-19:00:09 [Melodyne-4BUWYmty] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
-19:00:09 [Melodyne-4BUWYmty] [host -> plugin] >> 0: IPluginBase::initialize(context = <FUnknown*>)
-19:00:10 [Melodyne-4BUWYmty] [plugin -> host] >> 0: IHostApplication::getName(&name)
-19:00:10 [Melodyne-4BUWYmty] [plugin -> host] >> 0: IHostApplication::getName(&name)
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
-19:00:10 [Melodyne-4BUWYmty] [plugin <- host]    kResultOk, "REAPER"
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCC0B7716, 0x362B4EE5, 0x89EE5F41, 0x5458463F}
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
-19:00:10 [Melodyne-4BUWYmty] [host <- plugin]    kResultOk
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
-19:00:10 [Melodyne-4BUWYmty] [query interface] In FUnknown::queryInterface(): {0x12814E54, 0xA1CE4076, 0x82B96813, 0x16950BD6}
-19:00:10 [Melodyne-4BUWYmty] [query interface] In FUnknown::queryInterface(): {0xCD9A5913, 0xC9EB46D7, 0x96CA53AD, 0xD1DB89F5}
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xEEC89683, 0x80DB4336, 0x9177273E, 0x138A763B}
-19:00:10 [Melodyne-4BUWYmty] [query interface] In FUnknown::queryInterface(): {0xCD9A5913, 0xC9EB46D7, 0x96CA53AD, 0xD1DB89F5}
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
-19:00:10 [Melodyne-4BUWYmty] [host -> plugin] >> 0: ARA::IPlugInEntryPoint::getFactory()
-19:00:10 [Melodyne-4BUWYmty] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
-19:00:10 [Melodyne-4BUWYmty] [host <- plugin]    supported
-19:00:10 [Melodyne-4BUWYmty] [host -> plugin] >> 0: ARAFactory::initializeARAWithConfiguration(desiredApiGeneration = 4)
+19:15:28 [Melodyne-1AFGNVcs] Initializing yabridge version 3b307c7d
+19:15:28 [Melodyne-1AFGNVcs] library:       '/home/samuel/.local/share/yabridge/libyabridge-vst3.so'
+19:15:28 [Melodyne-1AFGNVcs] host:          '/home/samuel/.local/share/yabridge/yabridge-host.exe'
+19:15:28 [Melodyne-1AFGNVcs] plugin:        '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:15:28 [Melodyne-1AFGNVcs] plugin type:   'VST3'
+19:15:28 [Melodyne-1AFGNVcs] realtime:      'no'
+19:15:28 [Melodyne-1AFGNVcs] sockets:       '/run/user/1000/yabridge-Melodyne-1AFGNVcs'
+19:15:28 [Melodyne-1AFGNVcs] wine prefix:   '/home/samuel/.wine'
+19:15:28 [Melodyne-1AFGNVcs] wine version:  '9.0 (Ubuntu 9.0~repack-4build3)'
+19:15:28 [Melodyne-1AFGNVcs] 
+19:15:28 [Melodyne-1AFGNVcs] config from:   '<defaults>'
+19:15:28 [Melodyne-1AFGNVcs] hosting mode:  'individually, 64-bit'
+19:15:28 [Melodyne-1AFGNVcs] other options: '<none>'
+19:15:28 [Melodyne-1AFGNVcs] 
+19:15:28 [Melodyne-1AFGNVcs] Enabled features:
+19:15:28 [Melodyne-1AFGNVcs] - bitbridge support
+19:15:28 [Melodyne-1AFGNVcs] - CLAP support
+19:15:28 [Melodyne-1AFGNVcs] - VST3 support
+19:15:28 [Melodyne-1AFGNVcs] 
+19:15:29 [Melodyne-1AFGNVcs] [Wine STDERR] Initializing yabridge host version 3b307c7d
+19:15:29 [Melodyne-1AFGNVcs] [Wine STDERR] Preparing to load VST3 plugin at '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:15:30 [Melodyne-1AFGNVcs] [host -> plugin] >> GetPluginFactory()
+19:15:30 [Melodyne-1AFGNVcs] [plugin -> host] >> Requesting <Configuration>
+19:15:30 [Melodyne-1AFGNVcs] [plugin <- host]    <Configuration>
+19:15:30 [Melodyne-1AFGNVcs] [Wine STDERR] Finished initializing '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:15:30 [Melodyne-1AFGNVcs] [host <- plugin]    <IPluginFactory2* with 2 registered classes>
+19:15:30 [Melodyne-1AFGNVcs] [unknown interface] In IPluginFactory::queryInterface(): {0x4555A2AB, 0xC1234E57, 0x9B122910, 0x36878931}
+19:15:30 [Melodyne-1AFGNVcs] [query interface] In IPluginFactory::queryInterface(): {0x0007B650, 0xF24B4C0B, 0xA464EDB9, 0xF00B2ABB}
+19:15:30 [Melodyne-1AFGNVcs] [host -> plugin] >> IPluginFactory::createInstance(cid = {0x5653544D, 0x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj)
+19:15:30 [Melodyne-1AFGNVcs] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:15:30 [Melodyne-1AFGNVcs] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:15:30 [Melodyne-1AFGNVcs] [host <- plugin]    <FUnknown* #0>
+19:15:30 [Melodyne-1AFGNVcs] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:15:30 [Melodyne-1AFGNVcs] [host -> plugin] >> 0: IPluginBase::initialize(context = <FUnknown*>)
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
+19:15:31 [Melodyne-1AFGNVcs] [plugin -> host] >> 0: IHostApplication::getName(&name)
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
+19:15:31 [Melodyne-1AFGNVcs] [plugin <- host]    kResultOk, "REAPER"
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCC0B7716, 0x362B4EE5, 0x89EE5F41, 0x5458463F}
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xEEC89683, 0x80DB4336, 0x9177273E, 0x138A763B}
+19:15:31 [Melodyne-1AFGNVcs] [host <- plugin]    kResultOk
+19:15:31 [Melodyne-1AFGNVcs] [host <- plugin]    kResultOk
+19:15:31 [Melodyne-1AF12814E54, 0xA1CE4076, 0x82B96813, 0x16950BD6}
+ILITY (ARA::IPlugInEntryPoint)!
+19:15:31 [Melodyne-1AFGNVcs] [query interface] In FUnknown::queryInterface(): {0x12814E54, 0xA1CE4076, 0x82B96813, 0x16950BD6}
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:15:31 [Melodyne-1AFGNVcs] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:15:31 [Melodyne-1AFGNVcs] [query interface] In FUnknown::queryInterface(): {0xCD9A5913, 0xC9EB46D7, 0x96CA53AD, 0xD1DB89F5}
+19:15:31 [Melodyne-1AFGNVcs] [host -> plugin] >> 0: ARA::IPlugInEntryPoint::getFactory()
+19:15:31 [Melodyne-1AFGNVcs] [host <- plugin]    supported
+19:15:31 [Melodyne-1AFGNVcs] [host -> plugin] >> 0: ARAFactory::initializeARAWithConfiguration(desiredApiGeneration = 4)
