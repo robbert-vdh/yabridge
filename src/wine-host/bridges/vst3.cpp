@@ -424,6 +424,10 @@ void Vst3Bridge::run() {
             },
             [&](const YaARAPlugInEntryPoint::BindToDocumentController& request)
                 -> YaARAPlugInEntryPoint::BindToDocumentController::Response {
+                logger_.log(
+                    "NOTE: BindToDocumentController handler entered on Wine "
+                    "side (documentControllerRef = " +
+                    std::to_string(request.document_controller_ref) + ")");
                 // Step 1: If we haven't yet created a Wine-side document
                 // controller, do it now on a dedicated Win32Thread BEFORE
                 // calling bindToDocumentController.
@@ -448,6 +452,9 @@ void Vst3Bridge::run() {
                     // which is not enough, so we call CreateThread directly.
                     auto create_fn = fu2::unique_function<void()>(
                         [&, promise = std::move(created_promise)]() mutable {
+                            logger_.log(
+                                "NOTE: BindToDocumentController: "
+                                "CreateThread lambda started");
                             const auto& [instance, _] =
                                 get_instance(request.instance_id);
 
@@ -471,17 +478,20 @@ void Vst3Bridge::run() {
                                 return;
                             }
 
-                            const auto* linux_host_instance =
-                                reinterpret_cast<
-                                    const ARA::
-                                        ARADocumentControllerHostInstance*>(
-                                    static_cast<uintptr_t>(
-                                        request.document_controller_ref));
-
+                            logger_.log(
+                                "NOTE: BindToDocumentController: calling "
+                                "createDocumentControllerWithDocument()");
+                            // document_controller_ref is Carla's opaque
+                            // ARADocumentControllerRef — it is NOT a pointer
+                            // to ARADocumentControllerHostInstance. We must
+                            // NOT dereference it. Instead, create a stub
+                            // Wine-side host instance with null refs so the
+                            // Windows plugin can initialise its document
+                            // controller without any host callbacks.
                             instance.ara_document_controller_host_instance =
                                 std::make_unique<
                                     WineARADocumentControllerHostInstance>(
-                                    linux_host_instance,
+                                    nullptr,  // no Linux host instance yet
                                     request.instance_id,
                                     *this);
 
@@ -510,6 +520,10 @@ void Vst3Bridge::run() {
                             }
 
                             instance.ara_document_controller_instance = ctrl;
+                            logger_.log(
+                                "NOTE: BindToDocumentController: "
+                                "createDocumentControllerWithDocument() "
+                                "succeeded");
                             promise.set_value(true);
                         });
 
@@ -580,6 +594,10 @@ void Vst3Bridge::run() {
                     request)
                 -> YaARAPlugInEntryPoint2::
                     BindToDocumentControllerWithRoles::Response {
+                logger_.log(
+                    "NOTE: BindToDocumentControllerWithRoles handler entered "
+                    "on Wine side (documentControllerRef = " +
+                    std::to_string(request.document_controller_ref) + ")");
                 // Same two-step pattern: create document controller first on
                 // a dedicated Win32Thread (full stack), then bind with
                 // mutual-recursion support.
@@ -610,17 +628,15 @@ void Vst3Bridge::run() {
                                 return;
                             }
 
-                            const auto* linux_host_instance =
-                                reinterpret_cast<
-                                    const ARA::
-                                        ARADocumentControllerHostInstance*>(
-                                    static_cast<uintptr_t>(
-                                        request.document_controller_ref));
-
+                            // document_controller_ref is Carla's opaque
+                            // ARADocumentControllerRef — it is NOT a pointer
+                            // to ARADocumentControllerHostInstance. We must
+                            // NOT dereference it. Create a stub Wine-side
+                            // host instance with null refs.
                             instance.ara_document_controller_host_instance =
                                 std::make_unique<
                                     WineARADocumentControllerHostInstance>(
-                                    linux_host_instance,
+                                    nullptr,  // no Linux host instance yet
                                     request.instance_id,
                                     *this);
 
