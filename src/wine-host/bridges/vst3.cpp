@@ -887,20 +887,27 @@ void Vst3Bridge::run() {
             },
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {
-                // Melodyne's initializeARAWithConfiguration() has a deep call
-                // stack that overflows the default Wine thread stack (~64KB).
-                // We use the same large-stack CreateThread pattern as
-                // CreateDocumentController to avoid the stack overflow.
+                // Melodyne's initializeARAWithConfiguration() needs:
+                //   1. A large stack (deep call chain overflows Wine's default)
+                //   2. Win32 message pumping (Melodyne posts messages to itself
+                //      during init and deadlocks if they are never dispatched)
+                // We use the same two-thread + MsgWaitForMultipleObjects
+                // pattern as CreateDocumentController and BindToDocumentController.
+                // The outer thread pumps Win32 messages; the inner thread does
+                // the actual blocking call.
                 std::promise<void> done_promise;
                 auto done_future = done_promise.get_future();
 
-                auto init_fn = fu2::unique_function<void()>(
+                auto outer_fn = fu2::unique_function<void()>(
                     [&, promise = std::move(done_promise)]() mutable {
+                        OleInitialize(nullptr);
+
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
                         Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
                             entry_point(instance.object);
                         if (!entry_point) {
+                            OleUninitialize();
                             promise.set_value();
                             return;
                         }
@@ -909,42 +916,94 @@ void Vst3Bridge::run() {
                             entry_point->getFactory();
                         if (!factory ||
                             !factory->initializeARAWithConfiguration) {
+                            OleUninitialize();
                             promise.set_value();
                             return;
                         }
 
-                        if (!request.config.has_config) {
-                            factory->initializeARAWithConfiguration(nullptr);
-                            promise.set_value();
-                            return;
-                        }
-
+                        // Build the config struct on the outer thread so it
+                        // stays alive for the duration of the inner call.
                         ARA::ARAInterfaceConfiguration config{};
-                        config.structSize =
-                            request.config.struct_size
-                                ? static_cast<ARA::ARASize>(
-                                      request.config.struct_size)
-                                : static_cast<ARA::ARASize>(
-                                      ARA::kARAInterfaceConfigurationMinSize);
-                        config.desiredApiGeneration =
-                            request.config.desired_api_generation;
-                        config.assertFunctionAddress = nullptr;
-                        factory->initializeARAWithConfiguration(&config);
+                        const ARA::ARAInterfaceConfiguration* config_ptr =
+                            nullptr;
+                        if (request.config.has_config) {
+                            config.structSize =
+                                request.config.struct_size
+                                    ? static_cast<ARA::ARASize>(
+                                          request.config.struct_size)
+                                    : static_cast<ARA::ARASize>(
+                                          ARA::kARAInterfaceConfigurationMinSize);
+                            config.desiredApiGeneration =
+                                request.config.desired_api_generation;
+                            config.assertFunctionAddress = nullptr;
+                            config_ptr = &config;
+                        }
 
+                        // Force-create a message queue on this thread before
+                        // spawning the inner thread.
+                        {
+                            MSG dummy;
+                            PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
+                        }
+
+                        std::promise<void> inner_promise;
+                        auto inner_future = inner_promise.get_future();
+
+                        auto inner_fn = fu2::unique_function<void()>(
+                            [&, p = std::move(inner_promise),
+                             config_ptr]() mutable {
+                                OleInitialize(nullptr);
+                                factory->initializeARAWithConfiguration(
+                                    config_ptr);
+                                OleUninitialize();
+                                p.set_value();
+                            });
+
+                        // 32MB stack — Melodyne needs it.
+                        constexpr SIZE_T inner_stack = 32 * 1024 * 1024;
+                        HANDLE inner_handle = CreateThread(
+                            nullptr, inner_stack,
+                            reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                                win32_thread_trampoline),
+                            new fu2::unique_function<void()>(
+                                std::move(inner_fn)),
+                            0, nullptr);
+
+                        if (inner_handle) {
+                            DWORD wr;
+                            do {
+                                wr = MsgWaitForMultipleObjects(
+                                    1, &inner_handle, FALSE, INFINITE,
+                                    QS_ALLINPUT);
+                                if (wr == WAIT_OBJECT_0 + 1) {
+                                    MSG msg;
+                                    while (PeekMessageW(&msg, nullptr, 0, 0,
+                                                        PM_REMOVE)) {
+                                        TranslateMessage(&msg);
+                                        DispatchMessageW(&msg);
+                                    }
+                                }
+                            } while (wr != WAIT_OBJECT_0 &&
+                                     wr != WAIT_FAILED);
+                            CloseHandle(inner_handle);
+                        }
+
+                        inner_future.get();
+                        OleUninitialize();
                         promise.set_value();
                     });
 
                 constexpr SIZE_T ara_init_stack_size = 32 * 1024 * 1024;
-                HANDLE thread_handle = CreateThread(
+                HANDLE outer_handle = CreateThread(
                     nullptr, ara_init_stack_size,
                     reinterpret_cast<LPTHREAD_START_ROUTINE>(
                         win32_thread_trampoline),
-                    new fu2::unique_function<void()>(std::move(init_fn)),
+                    new fu2::unique_function<void()>(std::move(outer_fn)),
                     0, nullptr);
 
-                if (thread_handle) {
-                    WaitForSingleObject(thread_handle, INFINITE);
-                    CloseHandle(thread_handle);
+                if (outer_handle) {
+                    WaitForSingleObject(outer_handle, INFINITE);
+                    CloseHandle(outer_handle);
                 }
 
                 done_future.get();
