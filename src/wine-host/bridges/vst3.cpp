@@ -888,31 +888,48 @@ void Vst3Bridge::run() {
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {
                 // Melodyne's initializeARAWithConfiguration() needs:
-                //   1. The GUI thread to be pumping Win32 messages (Melodyne
-                //      posts messages to windows it created on the GUI thread
-                //      during IPluginBase::initialize())
-                //   2. A large stack (32MB) for the actual call — the GUI
-                //      thread has Wine's default ~64KB stack which overflows
+                //   1. A large stack (32MB) — Wine's default ~64KB overflows
+                //   2. Win32 message pumping — Melodyne posts messages to
+                //      windows it created on the GUI thread
+                //   3. The GUI thread must NOT be blocked — it must remain
+                //      in context_.run() to process asio tasks (IPC messages,
+                //      mutual recursion callbacks from the Linux side)
                 //
-                // Solution: run_in_context() puts us on the GUI thread so
-                // messages get pumped. From there we spawn a large-stack
-                // CreateThread for the actual call, and pump messages on the
-                // GUI thread while waiting for it to finish.
-                return main_context_
-                    .run_in_context([&]() -> Ack {
+                // We use the same standalone-thread pattern as
+                // CreateDocumentController and BindToDocumentController:
+                // an outer CreateThread pumps messages while an inner
+                // CreateThread (32MB stack) does the actual call. The GUI
+                // thread stays in context_.run(), so the periodic
+                // handle_events() timer keeps pumping Win32 messages for
+                // GUI-thread windows, and IPC flows normally.
+                //
+                // Previously this used run_in_context() which blocked the
+                // GUI thread inside MsgWaitForMultipleObjects, freezing
+                // the asio event loop and deadlocking on IPC callbacks.
+                std::promise<void> result_promise;
+                auto result_future = result_promise.get_future();
+
+                auto outer_fn = fu2::unique_function<void()>(
+                    [&, promise = std::move(result_promise)]() mutable {
+                        OleInitialize(nullptr);
+
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
                         Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
                             entry_point(instance.object);
                         if (!entry_point) {
-                            return Ack{};
+                            OleUninitialize();
+                            promise.set_value();
+                            return;
                         }
 
                         const ARA::ARAFactory* factory =
                             entry_point->getFactory();
                         if (!factory ||
                             !factory->initializeARAWithConfiguration) {
-                            return Ack{};
+                            OleUninitialize();
+                            promise.set_value();
+                            return;
                         }
 
                         ARA::ARAInterfaceConfiguration config{};
@@ -931,8 +948,8 @@ void Vst3Bridge::run() {
                             config_ptr = &config;
                         }
 
-                        // Force-create a message queue on this (GUI) thread
-                        // before spawning the worker thread.
+                        // Force-create a message queue on this thread
+                        // before spawning the inner worker thread.
                         {
                             MSG dummy;
                             PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
@@ -944,15 +961,17 @@ void Vst3Bridge::run() {
                         auto inner_fn = fu2::unique_function<void()>(
                             [&, p = std::move(inner_promise),
                              config_ptr]() mutable {
+                                OleInitialize(nullptr);
                                 factory->initializeARAWithConfiguration(
                                     config_ptr);
+                                OleUninitialize();
                                 p.set_value();
                             });
 
                         // 32MB stack — Melodyne's init path is deep.
-                        constexpr SIZE_T ara_init_stack = 32 * 1024 * 1024;
+                        constexpr SIZE_T inner_stack = 32 * 1024 * 1024;
                         HANDLE inner_handle = CreateThread(
-                            nullptr, ara_init_stack,
+                            nullptr, inner_stack,
                             reinterpret_cast<LPTHREAD_START_ROUTINE>(
                                 win32_thread_trampoline),
                             new fu2::unique_function<void()>(
@@ -960,10 +979,8 @@ void Vst3Bridge::run() {
                             0, nullptr);
 
                         if (inner_handle) {
-                            // Pump Win32 messages on the GUI thread while the
-                            // worker thread runs initializeARAWithConfiguration.
-                            // This is essential: Melodyne posts messages to
-                            // windows on this thread and waits for them.
+                            // Pump messages on this (outer) thread while
+                            // the inner thread runs the init call.
                             DWORD wr;
                             do {
                                 wr = MsgWaitForMultipleObjects(
@@ -983,9 +1000,25 @@ void Vst3Bridge::run() {
                         }
 
                         inner_future.get();
-                        return Ack{};
-                    })
-                    .get();
+                        OleUninitialize();
+                        promise.set_value();
+                    });
+
+                constexpr SIZE_T ara_stack_size = 32 * 1024 * 1024;
+                HANDLE outer_handle = CreateThread(
+                    nullptr, ara_stack_size,
+                    reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                        win32_thread_trampoline),
+                    new fu2::unique_function<void()>(std::move(outer_fn)),
+                    0, nullptr);
+
+                if (outer_handle) {
+                    WaitForSingleObject(outer_handle, INFINITE);
+                    CloseHandle(outer_handle);
+                }
+
+                result_future.get();
+                return Ack{};
             },
             [&](const YaARAFactory::Uninitialize& request)
                 -> YaARAFactory::Uninitialize::Response {
