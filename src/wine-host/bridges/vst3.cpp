@@ -887,54 +887,34 @@ void Vst3Bridge::run() {
             },
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {
-                // Melodyne's initializeARAWithConfiguration() needs:
-                //   1. A large stack (deep call chain overflows Wine's default)
-                //   2. COM/OLE initialized on the calling thread
-                //   3. A Win32 message queue on the calling thread (Melodyne
-                //      may post messages to itself and wait for them)
+                // Melodyne's initializeARAWithConfiguration() must run on the
+                // main GUI thread. During IPluginBase::initialize() Melodyne
+                // creates Win32 windows on the GUI thread, and
+                // initializeARAWithConfiguration() posts messages to those
+                // windows. If we call it from any other thread those messages
+                // go to a queue that nobody pumps, and the call hangs forever.
+                // Running it via run_in_context() puts it on the GUI thread
+                // where the main Win32 message loop is already running.
                 //
-                // Unlike createDocumentControllerWithDocument(), this call does
-                // NOT make IPC callbacks back to the Linux host, so we do NOT
-                // need the two-thread message-pump pattern. Instead we call it
-                // directly on a single large-stack thread that has a message
-                // queue. If Melodyne posts messages to itself during init, they
-                // will be dispatched by the PeekMessage/DispatchMessage loop
-                // we run after the call returns (or we can pump inline if
-                // needed). In practice Melodyne's initializeARAWithConfiguration
-                // appears to be synchronous and self-contained once it has a
-                // large enough stack and COM initialized.
-                std::promise<void> done_promise;
-                auto done_future = done_promise.get_future();
-
-                auto init_fn = fu2::unique_function<void()>(
-                    [&, promise = std::move(done_promise)]() mutable {
-                        OleInitialize(nullptr);
-
-                        // Force-create a message queue on this thread so that
-                        // any internal Win32 PostMessage calls by Melodyne
-                        // have a valid queue to post to.
-                        {
-                            MSG dummy;
-                            PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
-                        }
-
+                // The Linux-side AraFactoryProxy::initialize() uses
+                // send_mutually_recursive_message() so the host_callback_handler_
+                // thread remains free to process any IPC callbacks that
+                // Melodyne may make during this call.
+                return main_context_
+                    .run_in_context([&]() -> Ack {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
                         Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
                             entry_point(instance.object);
                         if (!entry_point) {
-                            OleUninitialize();
-                            promise.set_value();
-                            return;
+                            return Ack{};
                         }
 
                         const ARA::ARAFactory* factory =
                             entry_point->getFactory();
                         if (!factory ||
                             !factory->initializeARAWithConfiguration) {
-                            OleUninitialize();
-                            promise.set_value();
-                            return;
+                            return Ack{};
                         }
 
                         ARA::ARAInterfaceConfiguration config{};
@@ -955,36 +935,9 @@ void Vst3Bridge::run() {
 
                         factory->initializeARAWithConfiguration(config_ptr);
 
-                        // Drain any messages Melodyne may have posted to
-                        // itself during initialization.
-                        {
-                            MSG msg;
-                            while (PeekMessageW(&msg, nullptr, 0, 0,
-                                                PM_REMOVE)) {
-                                TranslateMessage(&msg);
-                                DispatchMessageW(&msg);
-                            }
-                        }
-
-                        OleUninitialize();
-                        promise.set_value();
-                    });
-
-                constexpr SIZE_T ara_init_stack_size = 32 * 1024 * 1024;
-                HANDLE thread_handle = CreateThread(
-                    nullptr, ara_init_stack_size,
-                    reinterpret_cast<LPTHREAD_START_ROUTINE>(
-                        win32_thread_trampoline),
-                    new fu2::unique_function<void()>(std::move(init_fn)),
-                    0, nullptr);
-
-                if (thread_handle) {
-                    WaitForSingleObject(thread_handle, INFINITE);
-                    CloseHandle(thread_handle);
-                }
-
-                done_future.get();
-                return Ack{};
+                        return Ack{};
+                    })
+                    .get();
             },
             [&](const YaARAFactory::Uninitialize& request)
                 -> YaARAFactory::Uninitialize::Response {
