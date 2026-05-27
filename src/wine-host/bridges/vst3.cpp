@@ -918,7 +918,7 @@ void Vst3Bridge::run() {
                         // Passing nullptr for assertFunctionAddress itself is
                         // invalid — it must point to a variable (which may be
                         // null to suppress assertions).
-                        ARA::ARAAssertFunction* assert_fn_ptr = nullptr;
+                        ARA::ARAAssertFunction assert_fn = nullptr;
                         if (request.config.has_config) {
                             config.structSize =
                                 request.config.struct_size
@@ -930,7 +930,7 @@ void Vst3Bridge::run() {
                                 request.config.desired_api_generation;
                             // Point to our null function pointer variable —
                             // this suppresses ARA assertions in Melodyne.
-                            config.assertFunctionAddress = &assert_fn_ptr;
+                            config.assertFunctionAddress = &assert_fn;
                             config_ptr = &config;
                         }
 
