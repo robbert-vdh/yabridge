@@ -913,6 +913,12 @@ void Vst3Bridge::run() {
                         ARA::ARAInterfaceConfiguration config{};
                         const ARA::ARAInterfaceConfiguration* config_ptr =
                             nullptr;
+                        // assertFunctionAddress must be a valid pointer to an
+                        // ARAAssertFunction* (pointer-to-function-pointer).
+                        // Passing nullptr for assertFunctionAddress itself is
+                        // invalid — it must point to a variable (which may be
+                        // null to suppress assertions).
+                        ARA::ARAAssertFunction* assert_fn_ptr = nullptr;
                         if (request.config.has_config) {
                             config.structSize =
                                 request.config.struct_size
@@ -922,7 +928,9 @@ void Vst3Bridge::run() {
                                           ARA::kARAInterfaceConfigurationMinSize);
                             config.desiredApiGeneration =
                                 request.config.desired_api_generation;
-                            config.assertFunctionAddress = nullptr;
+                            // Point to our null function pointer variable —
+                            // this suppresses ARA assertions in Melodyne.
+                            config.assertFunctionAddress = &assert_fn_ptr;
                             config_ptr = &config;
                         }
 
@@ -937,7 +945,6 @@ void Vst3Bridge::run() {
                             LPVOID caller_fiber = nullptr;
                             bool done = false;
                         } ctx{ factory, config_ptr };
-
                         // Convert the current thread to a fiber.
                         // If ConvertThreadToFiber fails the thread is already
                         // a fiber — retrieve the existing handle.
