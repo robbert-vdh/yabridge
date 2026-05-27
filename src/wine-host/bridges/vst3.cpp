@@ -888,16 +888,11 @@ void Vst3Bridge::run() {
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {
                 // Melodyne's initializeARAWithConfiguration() must be called
-                // directly on the GUI thread (the COM STA thread). Any other
-                // thread — including threads spawned from the GUI thread —
-                // causes it to silently hang before executing any code.
-                //
-                // The GUI thread's stack is now 32MB (set via -Wl,-stack in
-                // meson.build) so the deep call chain no longer overflows.
-                //
-                // The Linux side uses send_mutually_recursive_message() so
-                // the host_callback_handler_ thread stays free for IPC
-                // callbacks while we're blocked here.
+                // from the GUI thread (the thread that loaded the plugin DLL).
+                // The GUI thread's default stack (~64KB) overflows Melodyne's
+                // deep call chain. We use Windows Fibers to switch to a large
+                // stack while remaining on the GUI thread, preserving thread
+                // identity for any thread-affinity checks Melodyne may do.
                 return main_context_
                     .run_in_context([&]() -> Ack {
                         const auto& [instance, _] =
@@ -931,8 +926,47 @@ void Vst3Bridge::run() {
                             config_ptr = &config;
                         }
 
-                        factory->initializeARAWithConfiguration(config_ptr);
+                        // Use a Windows Fiber with a 32MB stack to call
+                        // initializeARAWithConfiguration() on the GUI thread
+                        // without overflowing the default ~64KB main stack.
+                        // Fibers run on the same thread, preserving thread
+                        // identity and COM STA affinity.
+                        struct FiberCtx {
+                            const ARA::ARAFactory* factory;
+                            const ARA::ARAInterfaceConfiguration* config_ptr;
+                            LPVOID caller_fiber;
+                        } ctx{ factory, config_ptr, nullptr };
 
+                        // Convert the current thread to a fiber so we can
+                        // switch back to it from the worker fiber.
+                        LPVOID caller_fiber =
+                            ConvertThreadToFiber(nullptr);
+                        if (!caller_fiber) {
+                            // Already a fiber (shouldn't happen, but handle it)
+                            caller_fiber = GetCurrentFiber();
+                        }
+                        ctx.caller_fiber = caller_fiber;
+
+                        constexpr SIZE_T fiber_stack = 32 * 1024 * 1024;
+                        LPVOID worker_fiber = CreateFiber(
+                            fiber_stack,
+                            [](LPVOID param) {
+                                auto* c = static_cast<FiberCtx*>(param);
+                                c->factory->initializeARAWithConfiguration(
+                                    c->config_ptr);
+                                SwitchToFiber(c->caller_fiber);
+                            },
+                            &ctx);
+
+                        if (worker_fiber) {
+                            SwitchToFiber(worker_fiber);
+                            DeleteFiber(worker_fiber);
+                        } else {
+                            // Fiber creation failed — fall back to direct call
+                            factory->initializeARAWithConfiguration(config_ptr);
+                        }
+
+                        ConvertFiberToThread();
                         return Ack{};
                     })
                     .get();
