@@ -1,0 +1,221 @@
+Unhandled exception: page fault on read access to 0xffffffffffffffff in 64-bit code (0x000001019e1210).
+Register dump:
+ rip:00000001019e1210 rsp:0000000006effc80 rbp:0000000006effd19 eflags:00010206 (  R- --  I   - -P- )
+ rax:0128547000000000 rbx:000000000011f270 rcx:000000000011f250 rdx:0000000000000000
+ rsi:0000000000000000 rdi:000000000011f250  r8:0000000001285470  r9:0000000000000007 r10:00005f914d5bd6d0
+ r11:9f398c16344a5db4 r12:0000000000000000 r13:0000000000000000 r14:0000000000000000 r15:0000000000000000
+Stack dump:
+0x00000006effc80:  0000000000000000 000000000011f270
+0x00000006effc90:  0000000006effd19 0000000000000000
+0x00000006effca0:  0000000000000000 0000000000000000
+0x00000006effcb0:  0000000000000000 0000000000000000
+0x00000006effcc0:  0000000000000000 0000000000000000
+0x00000006effcd0:  0000000000000000 0000000000000000
+0x00000006effce0:  0000000000000000 0000000000000000
+0x00000006effcf0:  0000000000000000 0000000000000000
+0x00000006effd00:  0000000000000000 0000000000000000
+0x00000006effd10:  0000000000000000 0000000000000000
+0x00000006effd20:  0000000000000000 0000000000000000
+0x00000006effd30:  0000000000000000 0000000000000000
+Backtrace:
+=>0 0x000001019e1210 in melodynecore-5.4.2.006 (+0x19e1210) (0x00000006effd19)
+  1 0x00792174a79b2d in yabridge-host (+0x39b2d) (0x00000006effe60)
+0x000001019e1210 melodynecore-5.4.2.006+0x19e1210: mov (%rax), %r9
+Modules:
+Module  Address                                 Debug info      Name (127 modules)
+PE             100000000-       105679000       Export          melodynecore-5.4.2.006
+PE             180000000-       1801b6000       Deferred        melodyne.vst3
+ELF         5f9122c26000-    5f9122c2b000       Deferred        <wine-loader>
+PE-Wine     6ffff8c60000-    6ffff8f81000       Deferred        dwrite
+PE-Wine     6ffff8fa0000-    6ffff8fb8000       Deferred        msimg32
+PE-Wine     6ffff8fd0000-    6ffff911e000       Deferred        dsound
+PE-Wine     6ffff9130000-    6ffff9162000       Deferred        compstui
+PE-Wine     6ffff9180000-    6ffff9246000       Deferred        winspool
+PE-Wine     6ffff9260000-    6ffff94e6000       Deferred        comdlg32
+PE-Wine     6ffff9500000-    6ffff957b000       Deferred        msacm32
+PE-Wine     6ffff9590000-    6ffff9745000       Deferred        winmm
+PE-Wine     6ffff9760000-    6ffff97aa000       Deferred        jsproxy
+PE-Wine     6ffff97c0000-    6ffff98f7000       Deferred        winhttp
+PE-Wine     6ffff9910000-    6ffff9bdd000       Deferred        gdiplus
+PE-Wine     6ffff9bf0000-    6ffff9dff000       Deferred        mfplat
+PE-Wine     6ffff9e10000-    6ffff9eb8000       Deferred        mfreadwrite
+PE-Wine     6ffff9ed0000-    6ffffa458000       Deferred        comctl32
+PE-Wine     6ffffa470000-    6ffffa742000       Deferred        dbghelp
+PE-Wine     6ffffa760000-    6ffffab1a000       Deferred        crypt32
+PE-Wine     6ffffab30000-    6ffffab54000       Deferred        nsi
+PE-Wine     6ffffab70000-    6ffffabbc000       Deferred        dnsapi
+PE-Wine     6ffffabd0000-    6ffffac5e000       Deferred        iphlpapi
+PE-Wine     6ffffb280000-    6ffffb348000       Deferred        uxtheme
+PE-Wine     6ffffb360000-    6ffffb3b9000       Deferred        winex11
+PE-Wine     6ffffb530000-    6ffffb5ad000       Deferred        imm32
+PE-Wine     6ffffb780000-    6ffffb7f8000       Deferred        propsys
+PE-Wine     6ffffb810000-    6ffffbcda000       Deferred        oleaut32
+PE-Wine     6ffffbcf0000-    6ffffbd01000       Deferred        psapi
+PE-Wine     6ffffbd20000-    6ffffbd58000       Deferred        rtworkq
+PE-Wine     6ffffbd70000-    6ffffbe29000       Deferred        rsaenh
+PE-Wine     6ffffbe40000-    6ffffbe83000       Deferred        imagehlp
+PE-Wine     6ffffbea0000-    6ffffbf4c000       Deferred        concrt140
+PE-Wine     6ffffbf60000-    6ffffbfbb000       Deferred        bcrypt
+PE-Wine     6ffffbfd0000-    6ffffc095000       Deferred        wintrust
+PE-Wine     6ffffc0b0000-    6ffffc0e6000       Deferred        vcruntime140_1
+PE-Wine     6ffffc100000-    6ffffc120000       Deferred        version
+PE-Wine     6ffffc130000-    6ffffc14a000       Deferred        vcruntime140
+PE-Wine     6ffffc160000-    6ffffc531000       Deferred        msvcp140
+PE-Wine     6ffffc550000-    6ffffc5a3000       Deferred        shcore
+PE-Wine     6ffffc5c0000-    6ffffc6d7000       Deferred        shlwapi
+PE-Wine     6ffffc6f0000-    6ffffd46b000       Deferred        shell32
+PE-Wine     6ffffd480000-    6ffffd4cd000       Deferred        coml2
+PE-Wine     6ffffd4e0000-    6ffffd51e000       Deferred        win32u
+PE-Wine     6ffffd530000-    6ffffd55a000       Deferred        zlib1
+PE-Wine     6ffffd570000-    6ffffdb15000       Deferred        user32
+PE-Wine     6ffffdb70000-    6ffffdd45000       Deferred        setupapi
+PE-Wine     6ffffdd60000-    6ffffdfe9000       Deferred        rpcrt4
+PE-Wine     6ffffe000000-    6ffffe2c9000       Deferred        gdi32
+PE-Wine     6ffffe2e0000-    6ffffe475000       Deferred        combase
+PE-Wine     6ffffe490000-    6ffffea06000       Deferred        ole32
+PE-Wine     6ffffea20000-    6ffffeacd000       Deferred        ws2_32
+PE-Wine     6ffffeae0000-    6ffffeed6000       Deferred        ucrtbase
+PE-Wine     6ffffeef0000-    6ffffefad000       Deferred        sechost
+PE-Wine     6ffffefc0000-    6fffff317000       Deferred        msvcrt
+PE-Wine     6fffff330000-    6fffff45c000       Deferred        advapi32
+PE-Wine     6fffff470000-    6fffffa6c000       Deferred        kernelbase
+PE-Wine     6fffffa80000-    6fffffc38000       Deferred        kernel32
+PE-Wine     6fffffc50000-    6ffffffeb000       Deferred        ntdll
+ELF         792173039000-    79217305e000       Deferred        libgpg-error.so.0
+ELF         79217305e000-    792173118000       Deferred        libzstd.so.1
+ELF         792173118000-    79217313a000       Deferred        liblz4.so.1
+ELF         79217313a000-    792173282000       Deferred        libgcrypt.so.20
+ELF         792173282000-    79217328f000       Deferred        libcap.so.2
+ELF         79217328f000-    79217336f000       Deferred        libsystemd.so.0
+ELF         79217336f000-    792173382000       Deferred        libresolv.so.2
+ELF         792173382000-    792173389000       Deferred        libkeyutils.so.1
+ELF         792173389000-    7921733d8000       Deferred        libdbus-1.so.3
+ELF         7921733d8000-    7921733e5000       Deferred        libkrb5support.so.0
+ELF         7921733e5000-    7921733eb000       Deferred        libcom_err.so.2
+ELF         7921733eb000-    792173417000       Deferred        libk5crypto.so.3
+ELF         792173417000-    7921734e0000       Deferred        libkrb5.so.3
+ELF         7921734e0000-    7921734f3000       Deferred        libavahi-client.so.3
+ELF         7921734f3000-    792173501000       Deferred        libavahi-common.so.3
+ELF         792173501000-    792173555000       Deferred        libgssapi_krb5.so.2
+ELF         792173555000-    7921735f5000       Deferred        libcups.so.2
+ELF         792173605000-    79217360b000       Deferred        dwrite.so
+ELF         79217360b000-    792173617000       Deferred        libffi.so.8
+ELF         792173617000-    79217369b000       Deferred        libgmp.so.10
+ELF         79217369b000-    7921736e3000       Deferred        libhogweed.so.6
+ELF         7921736e3000-    792173738000       Deferred        libnettle.so.8
+ELF         792173738000-    79217374e000       Deferred        libtasn1.so.6
+ELF         79217374e000-    7921738fb000       Deferred        libunistring.so.5
+ELF         7921738fb000-    79217391d000       Deferred        libidn2.so.0
+ELF         79217391d000-    792173ac1000       Deferred        libp11-kit.so.0
+ELF         792173ac1000-    792173cbc000       Deferred        libgnutls.so.30
+ELF         792173cc0000-    792173cc6000       Deferred        winspool.so
+ELF         792173cc6000-    792173ccb000       Deferred        dnsapi.so
+ELF         792173ccb000-    792173cd2000       Deferred        ws2_32.so
+ELF         792173cf6000-    792173cfe000       Deferred        libxfixes.so.3
+ELF         792173cfe000-    792173d0a000       Deferred        libxcursor.so.1
+ELF         792173d0a000-    792173d1d000       Deferred        libxi.so.6
+ELF         792173d1d000-    792173d22000       Deferred        libxcomposite.so.1
+ELF         792173d22000-    792173d2f000       Deferred        libxrandr.so.2
+ELF         792173d2f000-    792173d3b000       Deferred        libxrender.so.1
+ELF         792173d3b000-    792173d42000       Deferred        libxxf86vm.so.1
+ELF         792173d42000-    792173e7f000       Deferred        libx11.so.6
+ELF         792173e7f000-    792173e93000       Deferred        libxext.so.6
+ELF         792173e97000-    792173e9d000       Deferred        crypt32.so
+ELF         792173e9d000-    792173ea9000       Deferred        bcrypt.so
+ELF         792173ea9000-    792173f2f000       Deferred        winex11.so
+ELF         792174018000-    792174044000       Deferred        libexpat.so.1
+ELF         792174044000-    792174095000       Deferred        libfontconfig.so.1
+ELF         792174095000-    792174161000       Deferred        libfreetype.so.6
+ELF         792174161000-    792174300000       Deferred        win32u.so
+ELF         79217487f000-    792174884000       Deferred        libxinerama.so.1
+ELF         7921748a5000-    7921748c8000       Deferred        libbrotlicommon.so.1
+ELF         7921748c8000-    792174900000       Deferred        libpng16.so.16
+ELF         792174a00000-    792174d5d000       Export          yabridge-host.exe.so
+  \-PE      792174a40000-    792174d5d000       \               yabridge-host
+ELF         792174d5d000-    792174d6b000       Deferred        libbrotlidec.so.1
+ELF         792174d6b000-    792174d7f000       Deferred        libbz2.so.1.0
+ELF         792174d7f000-    792174d9b000       Deferred        libz.so.1
+ELF         792174d9b000-    792174daa000       Deferred        libmd.so.0
+ELF         792174daa000-    792174dc0000       Deferred        libbsd.so.0
+ELF         792174dc0000-    792174dee000       Deferred        libgcc_s.so.1
+ELF         792174dee000-    792174ed7000       Deferred        libm.so.6
+ELF         792174ed7000-    792174f00000       Deferred        libxcb.so.1
+ELF         792175df2000-    792175dfa000       Deferred        libxdmcp.so.6
+ELF         792175dfa000-    792175e00000       Deferred        libxau.so.6
+ELF         792175e00000-    792176012000       Deferred        libc.so.6
+ELF         792176016000-    79217601b000       Deferred        libdl.so.2
+ELF         79217601b000-    792176020000       Deferred        libpthread.so.0
+ELF         792176020000-    792176025000       Deferred        librt.so.1
+ELF         792176025000-    792176057000       Deferred        liblzma.so.5
+ELF         792176057000-    792176072000       Deferred        libunwind.so.8
+ELF         792176072000-    79217612d000       Export          ntdll.so
+ELF         792176150000-    79217618a000       Deferred        ld-linux-x86-64.so.2
+Threads:
+process  tid      prio    name (all IDs are in hex)
+00000020 start.exe
+	00000024    0     
+00000038 services.exe
+	0000003c    0     
+	00000040    0     wine_rpcrt4_server
+	0000004c    0     wine_rpcrt4_io
+	00000078    0     wine_rpcrt4_io
+	000000ac    0     wine_rpcrt4_io
+	000000c8    0     wine_rpcrt4_io
+	000000dc    0     
+	000000e8    0     wine_rpcrt4_io
+00000044 winedevice.exe
+	00000048    0     
+	00000054    0     
+	00000058    0     wine_sechost_service
+	0000005c    0     
+	00000060    0     
+	00000064    0     
+	000000d4    0     
+	000000d8    0     
+00000068 winedevice.exe
+	0000006c    0     
+	0000007c    0     
+	00000080    0     wine_sechost_service
+	00000084    0     
+	00000088    0     
+	0000008c    0     
+	00000090    0     
+	00000094    0     
+00000070 explorer.exe
+	00000074    0     
+	000000a0    0     
+	000000a4    0     wine_rpcrt4_server
+00000098 plugplay.exe
+	0000009c    0     
+	000000b4    0     
+	000000b8    0     wine_sechost_service
+	000000bc    0     wine_rpcrt4_server
+000000c0 svchost.exe
+	000000c4    0     
+	000000cc    0     
+	000000d0    0     wine_sechost_service
+000000e0 rpcss.exe
+	000000e4    0     
+	000000ec    0     
+	000000f0    0     wine_sechost_service
+	000000f4    0     wine_rpcrt4_server
+	000000f8    0     wine_rpcrt4_server
+	000000fc    0     wine_rpcrt4_io
+00000104 conhost.exe
+	00000108    0     
+0000010c (D) Z:\home\samuel\.local\share\yabridge\yabridge-host.exe
+	00000110    0 <== 
+	00000114    0     
+	00000118    0     
+	0000011c    0     
+	00000120    0     
+	00000124    0     
+	00000138    0     
+00000130 conhost.exe
+	00000134    0     
+System information:
+    Wine build: wine-9.0 (Ubuntu 9.0~repack-4build3)
+    Platform: x86_64 (guest: i386)
+    Version: Windows 10
+    Host system: Linux
+    Host version: 6.17.0-29-generic
