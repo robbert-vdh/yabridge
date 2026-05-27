@@ -887,19 +887,17 @@ void Vst3Bridge::run() {
             },
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {
-                // Melodyne's initializeARAWithConfiguration() must run on the
-                // main GUI thread. During IPluginBase::initialize() Melodyne
-                // creates Win32 windows on the GUI thread, and
-                // initializeARAWithConfiguration() posts messages to those
-                // windows. If we call it from any other thread those messages
-                // go to a queue that nobody pumps, and the call hangs forever.
-                // Running it via run_in_context() puts it on the GUI thread
-                // where the main Win32 message loop is already running.
+                // Melodyne's initializeARAWithConfiguration() needs:
+                //   1. The GUI thread to be pumping Win32 messages (Melodyne
+                //      posts messages to windows it created on the GUI thread
+                //      during IPluginBase::initialize())
+                //   2. A large stack (32MB) for the actual call — the GUI
+                //      thread has Wine's default ~64KB stack which overflows
                 //
-                // The Linux-side AraFactoryProxy::initialize() uses
-                // send_mutually_recursive_message() so the host_callback_handler_
-                // thread remains free to process any IPC callbacks that
-                // Melodyne may make during this call.
+                // Solution: run_in_context() puts us on the GUI thread so
+                // messages get pumped. From there we spawn a large-stack
+                // CreateThread for the actual call, and pump messages on the
+                // GUI thread while waiting for it to finish.
                 return main_context_
                     .run_in_context([&]() -> Ack {
                         const auto& [instance, _] =
@@ -933,8 +931,58 @@ void Vst3Bridge::run() {
                             config_ptr = &config;
                         }
 
-                        factory->initializeARAWithConfiguration(config_ptr);
+                        // Force-create a message queue on this (GUI) thread
+                        // before spawning the worker thread.
+                        {
+                            MSG dummy;
+                            PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
+                        }
 
+                        std::promise<void> inner_promise;
+                        auto inner_future = inner_promise.get_future();
+
+                        auto inner_fn = fu2::unique_function<void()>(
+                            [&, p = std::move(inner_promise),
+                             config_ptr]() mutable {
+                                factory->initializeARAWithConfiguration(
+                                    config_ptr);
+                                p.set_value();
+                            });
+
+                        // 32MB stack — Melodyne's init path is deep.
+                        constexpr SIZE_T ara_init_stack = 32 * 1024 * 1024;
+                        HANDLE inner_handle = CreateThread(
+                            nullptr, ara_init_stack,
+                            reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                                win32_thread_trampoline),
+                            new fu2::unique_function<void()>(
+                                std::move(inner_fn)),
+                            0, nullptr);
+
+                        if (inner_handle) {
+                            // Pump Win32 messages on the GUI thread while the
+                            // worker thread runs initializeARAWithConfiguration.
+                            // This is essential: Melodyne posts messages to
+                            // windows on this thread and waits for them.
+                            DWORD wr;
+                            do {
+                                wr = MsgWaitForMultipleObjects(
+                                    1, &inner_handle, FALSE, INFINITE,
+                                    QS_ALLINPUT);
+                                if (wr == WAIT_OBJECT_0 + 1) {
+                                    MSG msg;
+                                    while (PeekMessageW(&msg, nullptr, 0, 0,
+                                                        PM_REMOVE)) {
+                                        TranslateMessage(&msg);
+                                        DispatchMessageW(&msg);
+                                    }
+                                }
+                            } while (wr != WAIT_OBJECT_0 &&
+                                     wr != WAIT_FAILED);
+                            CloseHandle(inner_handle);
+                        }
+
+                        inner_future.get();
                         return Ack{};
                     })
                     .get();
