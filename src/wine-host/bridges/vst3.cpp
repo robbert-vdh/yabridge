@@ -986,8 +986,6 @@ void Vst3Bridge::run() {
                     return Ack{};
                 });
             },
-                return Ack{};
-            },
             [&](const YaARAFactory::Uninitialize& request)
                 -> YaARAFactory::Uninitialize::Response {
                 return main_context_
