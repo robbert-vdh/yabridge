@@ -947,15 +947,21 @@ void Vst3Bridge::run() {
                         }
                         ctx.caller_fiber = caller_fiber;
 
-                        constexpr SIZE_T fiber_stack = 32 * 1024 * 1024;
-                        LPVOID worker_fiber = CreateFiber(
-                            fiber_stack,
-                            [](LPVOID param) {
+                        // LPFIBER_START_ROUTINE requires Windows calling
+                        // convention — use a static function, not a lambda.
+                        struct FiberFn {
+                            static void WINAPI run(LPVOID param) {
                                 auto* c = static_cast<FiberCtx*>(param);
                                 c->factory->initializeARAWithConfiguration(
                                     c->config_ptr);
                                 SwitchToFiber(c->caller_fiber);
-                            },
+                            }
+                        };
+
+                        constexpr SIZE_T fiber_stack = 32 * 1024 * 1024;
+                        LPVOID worker_fiber = CreateFiber(
+                            fiber_stack,
+                            FiberFn::run,
                             &ctx);
 
                         if (worker_fiber) {
