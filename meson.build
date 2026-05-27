@@ -371,7 +371,8 @@ if is_64bit_system
     # Set the main thread stack size to 32MB so that ARA plugins like Melodyne
     # can call initializeARAWithConfiguration() from the GUI thread without
     # hitting Wine's default ~64KB stack limit.
-    link_args : ['-m64', '-Wl,--stack,33554432'],
+    # winegcc supports -mstack-size=N to set the PE stack size header.
+    link_args : ['-m64', '-mstack-size=33554432'],
   )
 endif
 
@@ -383,6 +384,6 @@ if with_bitbridge
     include_directories : include_dir,
     dependencies : host_32bit_deps,
     cpp_args : compiler_options + wine_32bit_compiler_options,
-    link_args : ['-m32', '-Wl,--stack,33554432'],
+    link_args : ['-m32', '-mstack-size=33554432'],
   )
 endif
