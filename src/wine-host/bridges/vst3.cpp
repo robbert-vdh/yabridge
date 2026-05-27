@@ -934,16 +934,18 @@ void Vst3Bridge::run() {
                         struct FiberCtx {
                             const ARA::ARAFactory* factory;
                             const ARA::ARAInterfaceConfiguration* config_ptr;
-                            LPVOID caller_fiber;
-                        } ctx{ factory, config_ptr, nullptr };
+                            LPVOID caller_fiber = nullptr;
+                            bool done = false;
+                        } ctx{ factory, config_ptr };
 
-                        // Convert the current thread to a fiber so we can
-                        // switch back to it from the worker fiber.
-                        LPVOID caller_fiber =
-                            ConvertThreadToFiber(nullptr);
+                        // Convert the current thread to a fiber.
+                        // If ConvertThreadToFiber fails the thread is already
+                        // a fiber — retrieve the existing handle.
+                        LPVOID caller_fiber = ConvertThreadToFiber(nullptr);
+                        bool was_already_fiber = false;
                         if (!caller_fiber) {
-                            // Already a fiber (shouldn't happen, but handle it)
                             caller_fiber = GetCurrentFiber();
+                            was_already_fiber = true;
                         }
                         ctx.caller_fiber = caller_fiber;
 
@@ -954,7 +956,11 @@ void Vst3Bridge::run() {
                                 auto* c = static_cast<FiberCtx*>(param);
                                 c->factory->initializeARAWithConfiguration(
                                     c->config_ptr);
-                                SwitchToFiber(c->caller_fiber);
+                                c->done = true;
+                                // Switch back to the caller fiber.
+                                if (c->caller_fiber) {
+                                    SwitchToFiber(c->caller_fiber);
+                                }
                             }
                         };
 
@@ -964,15 +970,22 @@ void Vst3Bridge::run() {
                             FiberFn::run,
                             &ctx);
 
-                        if (worker_fiber) {
+                        if (worker_fiber && caller_fiber) {
                             SwitchToFiber(worker_fiber);
+                            // We're back — initializeARAWithConfiguration
+                            // has returned and the worker fiber switched back.
                             DeleteFiber(worker_fiber);
                         } else {
-                            // Fiber creation failed — fall back to direct call
+                            // Fiber setup failed — fall back to direct call.
+                            if (worker_fiber) {
+                                DeleteFiber(worker_fiber);
+                            }
                             factory->initializeARAWithConfiguration(config_ptr);
                         }
 
-                        ConvertFiberToThread();
+                        if (!was_already_fiber) {
+                            ConvertFiberToThread();
+                        }
                         return Ack{};
                     })
                     .get();
