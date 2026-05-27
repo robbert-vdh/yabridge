@@ -124,10 +124,19 @@ class AraFactoryProxy {
         if (!active_proxy_) {
             return;
         }
-        active_proxy_->bridge_.send_message(YaARAFactory::Initialize{
-            .instance_id = active_proxy_->instance_id_,
-            .config = YaARAFactoryConfig(config),
-        });
+        // Must use send_mutually_recursive_message() rather than send_message()
+        // because Melodyne calls back into the host from within
+        // initializeARAWithConfiguration(). Using a plain send_message() would
+        // deadlock: the host_callback_handler_ thread would be blocked waiting
+        // for the Initialize response while the incoming callback from Wine
+        // can never be processed. send_mutually_recursive_message() forks a
+        // new thread for the blocking send and lets this thread handle
+        // incoming callbacks via the mutual recursion IO context.
+        active_proxy_->bridge_.send_mutually_recursive_message(
+            YaARAFactory::Initialize{
+                .instance_id = active_proxy_->instance_id_,
+                .config = YaARAFactoryConfig(config),
+            });
     }
 
     static void ARA_CALL uninitialize() {
