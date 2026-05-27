@@ -915,10 +915,27 @@ void Vst3Bridge::run() {
                             nullptr;
                         // assertFunctionAddress must be a valid pointer to an
                         // ARAAssertFunction* (pointer-to-function-pointer).
-                        // Passing nullptr for assertFunctionAddress itself is
-                        // invalid — it must point to a variable (which may be
-                        // null to suppress assertions).
-                        ARA::ARAAssertFunction assert_fn = nullptr;
+                        // Per ARA spec: "It must remain valid until
+                        // uninitializeARA() is called." A local stack variable
+                        // would be destroyed when this function returns, so
+                        // the pointer must outlive the call — `static` gives
+                        // it process lifetime.
+                        //
+                        // We supply a real no-op assert function rather than
+                        // NULL: the spec allows NULL, but some plugins
+                        // dereference and call without null-checking, which
+                        // would crash with a NULL function pointer.
+                        struct AssertHolder {
+                            static void ARA_CALL noop_assert(
+                                ARA::ARAAssertCategory /*category*/,
+                                const void* /*problematicArgument*/,
+                                const char* /*diagnosis*/) {
+                                // Intentionally empty — ARA spec allows the
+                                // host to silently suppress assertions.
+                            }
+                        };
+                        static ARA::ARAAssertFunction assert_fn =
+                            &AssertHolder::noop_assert;
                         if (request.config.has_config) {
                             config.structSize =
                                 request.config.struct_size
@@ -928,11 +945,19 @@ void Vst3Bridge::run() {
                                           ARA::kARAInterfaceConfigurationMinSize);
                             config.desiredApiGeneration =
                                 request.config.desired_api_generation;
-                            // Point to our null function pointer variable —
-                            // this suppresses ARA assertions in Melodyne.
                             config.assertFunctionAddress = &assert_fn;
                             config_ptr = &config;
                         }
+
+                        logger_.log(
+                            "NOTE: ARA initializeARAWithConfiguration: "
+                            "preparing fiber (structSize=" +
+                            std::to_string(config.structSize) +
+                            ", desiredApiGeneration=" +
+                            std::to_string(static_cast<int>(
+                                config.desiredApiGeneration)) +
+                            ", assert_fn=" +
+                            (assert_fn ? "noop" : "null") + ")");
 
                         // Use a Windows Fiber with a 32MB stack to call
                         // initializeARAWithConfiguration() on the GUI thread
@@ -978,12 +1003,28 @@ void Vst3Bridge::run() {
                             &ctx);
 
                         if (worker_fiber && caller_fiber) {
+                            logger_.log(
+                                "NOTE: ARA initializeARAWithConfiguration: "
+                                "switching to 32MB fiber");
                             SwitchToFiber(worker_fiber);
                             // We're back — initializeARAWithConfiguration
                             // has returned and the worker fiber switched back.
+                            logger_.log(
+                                "NOTE: ARA initializeARAWithConfiguration: "
+                                "returned from fiber (done=" +
+                                std::string(ctx.done ? "true" : "false") + ")");
                             DeleteFiber(worker_fiber);
                         } else {
                             // Fiber setup failed — fall back to direct call.
+                            logger_.log(
+                                "WARNING: ARA initializeARAWithConfiguration: "
+                                "fiber setup failed (caller=" +
+                                std::to_string(
+                                    reinterpret_cast<uintptr_t>(caller_fiber)) +
+                                ", worker=" +
+                                std::to_string(
+                                    reinterpret_cast<uintptr_t>(worker_fiber)) +
+                                "); falling back to direct call");
                             if (worker_fiber) {
                                 DeleteFiber(worker_fiber);
                             }
