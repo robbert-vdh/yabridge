@@ -887,104 +887,55 @@ void Vst3Bridge::run() {
             },
             [&](const YaARAFactory::Initialize& request)
                 -> YaARAFactory::Initialize::Response {
-                // Melodyne's initializeARAWithConfiguration() MUST be called
-                // from the GUI thread (the COM STA thread initialized in
-                // main()). When called from any other thread it silently hangs
-                // before executing any code. This was confirmed by observing
-                // that run_in_context() (GUI thread) produced Wine STDERR
-                // output from Melodyne's code, while standalone CreateThread
-                // produced nothing.
+                // Melodyne's initializeARAWithConfiguration() must be called
+                // directly on the GUI thread (the COM STA thread). Any other
+                // thread — including threads spawned from the GUI thread —
+                // causes it to silently hang before executing any code.
                 //
-                // The GUI thread also needs a 32MB stack for the call (Wine's
-                // default ~64KB overflows Melodyne's deep init chain), so we
-                // use do_mutual_recursion_on_gui_thread() to run on the GUI
-                // thread while keeping the asio event loop alive for IPC, then
-                // spawn a 32MB CreateThread from there and pump messages while
-                // waiting for it.
-                return do_mutual_recursion_on_gui_thread([&]() -> Ack {
-                    const auto& [instance, _] =
-                        get_instance(request.instance_id);
-                    Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
-                        entry_point(instance.object);
-                    if (!entry_point) {
+                // The GUI thread's stack is now 32MB (set via -Wl,-stack in
+                // meson.build) so the deep call chain no longer overflows.
+                //
+                // The Linux side uses send_mutually_recursive_message() so
+                // the host_callback_handler_ thread stays free for IPC
+                // callbacks while we're blocked here.
+                return main_context_
+                    .run_in_context([&]() -> Ack {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                            entry_point(instance.object);
+                        if (!entry_point) {
+                            return Ack{};
+                        }
+
+                        const ARA::ARAFactory* factory =
+                            entry_point->getFactory();
+                        if (!factory ||
+                            !factory->initializeARAWithConfiguration) {
+                            return Ack{};
+                        }
+
+                        ARA::ARAInterfaceConfiguration config{};
+                        const ARA::ARAInterfaceConfiguration* config_ptr =
+                            nullptr;
+                        if (request.config.has_config) {
+                            config.structSize =
+                                request.config.struct_size
+                                    ? static_cast<ARA::ARASize>(
+                                          request.config.struct_size)
+                                    : static_cast<ARA::ARASize>(
+                                          ARA::kARAInterfaceConfigurationMinSize);
+                            config.desiredApiGeneration =
+                                request.config.desired_api_generation;
+                            config.assertFunctionAddress = nullptr;
+                            config_ptr = &config;
+                        }
+
+                        factory->initializeARAWithConfiguration(config_ptr);
+
                         return Ack{};
-                    }
-
-                    const ARA::ARAFactory* factory =
-                        entry_point->getFactory();
-                    if (!factory ||
-                        !factory->initializeARAWithConfiguration) {
-                        return Ack{};
-                    }
-
-                    ARA::ARAInterfaceConfiguration config{};
-                    const ARA::ARAInterfaceConfiguration* config_ptr =
-                        nullptr;
-                    if (request.config.has_config) {
-                        config.structSize =
-                            request.config.struct_size
-                                ? static_cast<ARA::ARASize>(
-                                      request.config.struct_size)
-                                : static_cast<ARA::ARASize>(
-                                      ARA::kARAInterfaceConfigurationMinSize);
-                        config.desiredApiGeneration =
-                            request.config.desired_api_generation;
-                        config.assertFunctionAddress = nullptr;
-                        config_ptr = &config;
-                    }
-
-                    // Force-create a message queue on this (GUI) thread
-                    // before spawning the worker thread.
-                    {
-                        MSG dummy;
-                        PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
-                    }
-
-                    std::promise<void> inner_promise;
-                    auto inner_future = inner_promise.get_future();
-
-                    auto inner_fn = fu2::unique_function<void()>(
-                        [&, p = std::move(inner_promise),
-                         config_ptr]() mutable {
-                            factory->initializeARAWithConfiguration(
-                                config_ptr);
-                            p.set_value();
-                        });
-
-                    // 32MB stack — Melodyne's init path is deep.
-                    constexpr SIZE_T inner_stack = 32 * 1024 * 1024;
-                    HANDLE inner_handle = CreateThread(
-                        nullptr, inner_stack,
-                        reinterpret_cast<LPTHREAD_START_ROUTINE>(
-                            win32_thread_trampoline),
-                        new fu2::unique_function<void()>(
-                            std::move(inner_fn)),
-                        0, nullptr);
-
-                    if (inner_handle) {
-                        // Pump Win32 messages on the GUI thread while the
-                        // worker runs initializeARAWithConfiguration.
-                        DWORD wr;
-                        do {
-                            wr = MsgWaitForMultipleObjects(
-                                1, &inner_handle, FALSE, INFINITE,
-                                QS_ALLINPUT);
-                            if (wr == WAIT_OBJECT_0 + 1) {
-                                MSG msg;
-                                while (PeekMessageW(&msg, nullptr, 0, 0,
-                                                    PM_REMOVE)) {
-                                    TranslateMessage(&msg);
-                                    DispatchMessageW(&msg);
-                                }
-                            }
-                        } while (wr != WAIT_OBJECT_0 &&
-                                 wr != WAIT_FAILED);
-                        CloseHandle(inner_handle);
-                    }
-
-                    inner_future.get();
-                    return Ack{};
-                });
+                    })
+                    .get();
             },
             [&](const YaARAFactory::Uninitialize& request)
                 -> YaARAFactory::Uninitialize::Response {
