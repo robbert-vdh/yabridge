@@ -937,27 +937,20 @@ void Vst3Bridge::run() {
                         static ARA::ARAAssertFunction assert_fn =
                             &AssertHolder::noop_assert;
                         if (request.config.has_config) {
-                            config.structSize =
-                                request.config.struct_size
-                                    ? static_cast<ARA::ARASize>(
-                                          request.config.struct_size)
-                                    : static_cast<ARA::ARASize>(
-                                          ARA::kARAInterfaceConfigurationMinSize);
+                            // Always use kARAInterfaceConfigurationMinSize
+                            // (24) as structSize so Melodyne knows
+                            // assertFunctionAddress is present. REAPER passes
+                            // structSize=20 (its own packed layout), but
+                            // Melodyne on Windows expects offset 16 for
+                            // assertFunctionAddress and needs structSize >= 24
+                            // to know the field exists.
+                            config.structSize = static_cast<ARA::ARASize>(
+                                ARA::kARAInterfaceConfigurationMinSize);
                             config.desiredApiGeneration =
                                 request.config.desired_api_generation;
                             config.assertFunctionAddress = &assert_fn;
                             config_ptr = &config;
                         }
-
-                        logger_.log(
-                            "NOTE: ARA initializeARAWithConfiguration: "
-                            "preparing fiber (structSize=" +
-                            std::to_string(config.structSize) +
-                            ", desiredApiGeneration=" +
-                            std::to_string(static_cast<int>(
-                                config.desiredApiGeneration)) +
-                            ", assert_fn=" +
-                            (assert_fn ? "noop" : "null") + ")");
 
                         // Use a Windows Fiber with a 32MB stack to call
                         // initializeARAWithConfiguration() on the GUI thread
