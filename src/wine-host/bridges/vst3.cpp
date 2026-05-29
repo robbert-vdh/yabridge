@@ -1210,13 +1210,40 @@ void Vst3Bridge::run() {
                         auto inner_fn = fu2::unique_function<void()>(
                             [&, p = std::move(ctrl_promise)]() mutable {
                                 OleInitialize(nullptr);
+                                const ARA::ARADocumentControllerHostInstance* hi =
+                                    instance.ara_document_controller_host_instance->get();
+                                // Debug: log host instance pointer and structSize
+                                char dbg_buf[256];
+                                snprintf(dbg_buf, sizeof(dbg_buf),
+                                    "DEBUG: createDocumentControllerWithDocument: "
+                                    "host_instance=0x%016llx structSize=%llu "
+                                    "audioAccessRef=0x%016llx archivingRef=0x%016llx "
+                                    "audioAccessIface=0x%016llx archivingIface=0x%016llx",
+                                    (unsigned long long)reinterpret_cast<uintptr_t>(hi),
+                                    hi ? (unsigned long long)hi->structSize : 0ULL,
+                                    hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerHostRef) : 0ULL,
+                                    hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerHostRef) : 0ULL,
+                                    hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerInterface) : 0ULL,
+                                    hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerInterface) : 0ULL);
+                                fprintf(stderr, "%s\n", dbg_buf);
+                                fflush(stderr);
+                                snprintf(dbg_buf, sizeof(dbg_buf),
+                                    "DEBUG: createDocumentControllerWithDocument: "
+                                    "props=0x%016llx structSize=%llu name=%s",
+                                    (unsigned long long)reinterpret_cast<uintptr_t>(&props),
+                                    (unsigned long long)props.structSize,
+                                    props.name ? props.name : "(null)");
+                                fprintf(stderr, "%s\n", dbg_buf);
+                                fflush(stderr);
                                 const ARA::ARADocumentControllerInstance* ctrl =
                                     factory
                                         ->createDocumentControllerWithDocument(
-                                            instance
-                                                .ara_document_controller_host_instance
-                                                ->get(),
+                                            hi,
                                             &props);
+                                fprintf(stderr,
+                                    "DEBUG: createDocumentControllerWithDocument returned: 0x%016llx\n",
+                                    (unsigned long long)reinterpret_cast<uintptr_t>(ctrl));
+                                fflush(stderr);
                                 OleUninitialize();
                                 p.set_value(ctrl);
                             });
