@@ -952,6 +952,53 @@ void Vst3Bridge::run() {
                             config_ptr = &config;
                         }
 
+                        // Extensive debug logging to diagnose the crash at
+                        // melodynecore+0x19e1210: mov (%rax), %r9
+                        // rax=0x0128547000000000 — config pointer is corrupted
+                        logger_.log(
+                            "DEBUG: ARA initializeARAWithConfiguration: "
+                            "has_config=" + std::string(request.config.has_config ? "true" : "false") +
+                            " config_ptr=" + (config_ptr
+                                ? "0x" + [](uintptr_t v) {
+                                    char buf[32]; snprintf(buf, sizeof(buf), "%016llx", (unsigned long long)v); return std::string(buf);
+                                  }(reinterpret_cast<uintptr_t>(config_ptr))
+                                : "null"));
+                        if (config_ptr) {
+                            logger_.log(
+                                "DEBUG: ARA config struct: "
+                                "structSize=" + std::to_string(config_ptr->structSize) +
+                                " desiredApiGeneration=" + std::to_string(static_cast<int>(config_ptr->desiredApiGeneration)) +
+                                " assertFunctionAddress=" + (config_ptr->assertFunctionAddress
+                                    ? "0x" + [](uintptr_t v) {
+                                        char buf[32]; snprintf(buf, sizeof(buf), "%016llx", (unsigned long long)v); return std::string(buf);
+                                      }(reinterpret_cast<uintptr_t>(config_ptr->assertFunctionAddress))
+                                    : "null") +
+                                " *assertFunctionAddress=" + (config_ptr->assertFunctionAddress && *config_ptr->assertFunctionAddress
+                                    ? "0x" + [](uintptr_t v) {
+                                        char buf[32]; snprintf(buf, sizeof(buf), "%016llx", (unsigned long long)v); return std::string(buf);
+                                      }(reinterpret_cast<uintptr_t>(*config_ptr->assertFunctionAddress))
+                                    : "null"));
+                            logger_.log(
+                                "DEBUG: ARA config raw bytes at " +
+                                [](uintptr_t v) {
+                                    char buf[32]; snprintf(buf, sizeof(buf), "0x%016llx", (unsigned long long)v); return std::string(buf);
+                                }(reinterpret_cast<uintptr_t>(config_ptr)) +
+                                ": sizeof=" + std::to_string(sizeof(*config_ptr)) +
+                                " offsetof(structSize)=" + std::to_string(offsetof(ARA::ARAInterfaceConfiguration, structSize)) +
+                                " offsetof(desiredApiGeneration)=" + std::to_string(offsetof(ARA::ARAInterfaceConfiguration, desiredApiGeneration)) +
+                                " offsetof(assertFunctionAddress)=" + std::to_string(offsetof(ARA::ARAInterfaceConfiguration, assertFunctionAddress)));
+                        }
+                        logger_.log(
+                            "DEBUG: ARA factory ptr=" +
+                            [](uintptr_t v) {
+                                char buf[32]; snprintf(buf, sizeof(buf), "0x%016llx", (unsigned long long)v); return std::string(buf);
+                            }(reinterpret_cast<uintptr_t>(factory)) +
+                            " initializeARAWithConfiguration=" +
+                            [](uintptr_t v) {
+                                char buf[32]; snprintf(buf, sizeof(buf), "0x%016llx", (unsigned long long)v); return std::string(buf);
+                            }(reinterpret_cast<uintptr_t>(
+                                reinterpret_cast<const void*>(factory->initializeARAWithConfiguration))));
+
                         // Use a Windows Fiber with a 32MB stack to call
                         // initializeARAWithConfiguration() on the GUI thread
                         // without overflowing the default ~64KB main stack.
@@ -979,8 +1026,41 @@ void Vst3Bridge::run() {
                         struct FiberFn {
                             static void WINAPI run(LPVOID param) {
                                 auto* c = static_cast<FiberCtx*>(param);
+                                // Log config pointer validity inside the fiber
+                                // before calling Melodyne — this confirms the
+                                // pointer is still valid on the fiber's stack.
+                                char buf[256];
+                                snprintf(buf, sizeof(buf),
+                                    "DEBUG: ARA fiber: config_ptr=0x%016llx"
+                                    " factory=0x%016llx",
+                                    (unsigned long long)reinterpret_cast<uintptr_t>(c->config_ptr),
+                                    (unsigned long long)reinterpret_cast<uintptr_t>(c->factory));
+                                // Write directly to stderr since logger_ is
+                                // not accessible from a static function.
+                                fprintf(stderr, "%s\n", buf);
+                                fflush(stderr);
+                                if (c->config_ptr) {
+                                    snprintf(buf, sizeof(buf),
+                                        "DEBUG: ARA fiber: config contents: "
+                                        "structSize=%llu desiredApiGen=%d "
+                                        "assertFnAddr=0x%016llx",
+                                        (unsigned long long)c->config_ptr->structSize,
+                                        (int)c->config_ptr->desiredApiGeneration,
+                                        (unsigned long long)reinterpret_cast<uintptr_t>(
+                                            c->config_ptr->assertFunctionAddress));
+                                    fprintf(stderr, "%s\n", buf);
+                                    fflush(stderr);
+                                }
+                                fprintf(stderr,
+                                    "DEBUG: ARA fiber: calling "
+                                    "initializeARAWithConfiguration now\n");
+                                fflush(stderr);
                                 c->factory->initializeARAWithConfiguration(
                                     c->config_ptr);
+                                fprintf(stderr,
+                                    "DEBUG: ARA fiber: "
+                                    "initializeARAWithConfiguration returned\n");
+                                fflush(stderr);
                                 c->done = true;
                                 // Switch back to the caller fiber.
                                 if (c->caller_fiber) {
