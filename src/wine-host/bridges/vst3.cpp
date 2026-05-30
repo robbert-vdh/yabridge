@@ -1200,88 +1200,102 @@ void Vst3Bridge::run() {
                         props.name = name_cstr;
 
                         // Force-create a message queue on this thread before
-                        // spawning the nested thread.
+                        // spawning the nested fiber.
                         {
                             MSG dummy;
                             PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
                         }
 
-                        std::promise<const ARA::ARADocumentControllerInstance*>
-                            ctrl_promise;
-                        auto ctrl_future = ctrl_promise.get_future();
+                        struct CtrlFiberCtx {
+                            const ARA::ARAFactory* factory;
+                            const ARA::ARADocumentControllerHostInstance* hi;
+                            const ARA::ARADocumentProperties* props;
+                            LPVOID caller_fiber = nullptr;
+                            const ARA::ARADocumentControllerInstance* result = nullptr;
+                        } ctrl_ctx{ factory,
+                                    instance.ara_document_controller_host_instance->get(),
+                                    &props };
 
-                        auto inner_fn = fu2::unique_function<void()>(
-                            [&, p = std::move(ctrl_promise)]() mutable {
-                                OleInitialize(nullptr);
-                                const ARA::ARADocumentControllerHostInstance* hi =
-                                    instance.ara_document_controller_host_instance->get();
-                                // Debug: log host instance pointer and structSize
-                                char dbg_buf[256];
-                                snprintf(dbg_buf, sizeof(dbg_buf),
-                                    "DEBUG: createDocumentControllerWithDocument: "
-                                    "host_instance=0x%016llx structSize=%llu "
-                                    "audioAccessRef=0x%016llx archivingRef=0x%016llx "
-                                    "audioAccessIface=0x%016llx archivingIface=0x%016llx",
-                                    (unsigned long long)reinterpret_cast<uintptr_t>(hi),
-                                    hi ? (unsigned long long)hi->structSize : 0ULL,
-                                    hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerHostRef) : 0ULL,
-                                    hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerHostRef) : 0ULL,
-                                    hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerInterface) : 0ULL,
-                                    hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerInterface) : 0ULL);
-                                fprintf(stderr, "%s\n", dbg_buf);
-                                fflush(stderr);
-                                snprintf(dbg_buf, sizeof(dbg_buf),
-                                    "DEBUG: createDocumentControllerWithDocument: "
-                                    "props=0x%016llx structSize=%llu name=%s",
-                                    (unsigned long long)reinterpret_cast<uintptr_t>(&props),
-                                    (unsigned long long)props.structSize,
-                                    props.name ? props.name : "(null)");
-                                fprintf(stderr, "%s\n", dbg_buf);
-                                fflush(stderr);
-                                const ARA::ARADocumentControllerInstance* ctrl =
-                                    factory
-                                        ->createDocumentControllerWithDocument(
-                                            hi,
-                                            &props);
+                        // Debug log
+                        {
+                            const ARA::ARADocumentControllerHostInstance* hi = ctrl_ctx.hi;
+                            char dbg_buf[256];
+                            snprintf(dbg_buf, sizeof(dbg_buf),
+                                "DEBUG: createDocumentControllerWithDocument: "
+                                "host_instance=0x%016llx structSize=%llu "
+                                "audioAccessRef=0x%016llx archivingRef=0x%016llx "
+                                "audioAccessIface=0x%016llx archivingIface=0x%016llx",
+                                (unsigned long long)reinterpret_cast<uintptr_t>(hi),
+                                hi ? (unsigned long long)hi->structSize : 0ULL,
+                                hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerHostRef) : 0ULL,
+                                hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerHostRef) : 0ULL,
+                                hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerInterface) : 0ULL,
+                                hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerInterface) : 0ULL);
+                            fprintf(stderr, "%s\n", dbg_buf);
+                            snprintf(dbg_buf, sizeof(dbg_buf),
+                                "DEBUG: createDocumentControllerWithDocument: "
+                                "props=0x%016llx structSize=%llu name=%s",
+                                (unsigned long long)reinterpret_cast<uintptr_t>(&props),
+                                (unsigned long long)props.structSize,
+                                props.name ? props.name : "(null)");
+                            fprintf(stderr, "%s\n", dbg_buf);
+                            fflush(stderr);
+                        }
+
+                        // Use a fiber with 32MB stack so Wine commits the
+                        // full stack upfront (same pattern as
+                        // initializeARAWithConfiguration). The outer thread
+                        // pumps Win32 messages while the fiber runs.
+                        struct CtrlFiberFn {
+                            static void WINAPI run(LPVOID param) {
+                                auto* c = static_cast<CtrlFiberCtx*>(param);
                                 fprintf(stderr,
-                                    "DEBUG: createDocumentControllerWithDocument returned: 0x%016llx\n",
-                                    (unsigned long long)reinterpret_cast<uintptr_t>(ctrl));
+                                    "DEBUG: createDocumentControllerWithDocument fiber: calling now\n");
                                 fflush(stderr);
-                                OleUninitialize();
-                                p.set_value(ctrl);
-                            });
-
-                        // 32MB stack — Melodyne needs it.
-                        constexpr SIZE_T inner_stack = 32 * 1024 * 1024;
-                        HANDLE inner_handle = CreateThread(
-                            nullptr, inner_stack,
-                            reinterpret_cast<LPTHREAD_START_ROUTINE>(
-                                win32_thread_trampoline),
-                            new fu2::unique_function<void()>(
-                                std::move(inner_fn)),
-                            0, nullptr);
-
-                        if (inner_handle) {
-                            DWORD wr;
-                            do {
-                                wr = MsgWaitForMultipleObjects(
-                                    1, &inner_handle, FALSE, INFINITE,
-                                    QS_ALLINPUT);
-                                if (wr == WAIT_OBJECT_0 + 1) {
-                                    MSG msg;
-                                    while (PeekMessageW(&msg, nullptr, 0, 0,
-                                                        PM_REMOVE)) {
-                                        TranslateMessage(&msg);
-                                        DispatchMessageW(&msg);
-                                    }
+                                c->result =
+                                    c->factory->createDocumentControllerWithDocument(
+                                        c->hi, c->props);
+                                fprintf(stderr,
+                                    "DEBUG: createDocumentControllerWithDocument fiber: returned 0x%016llx\n",
+                                    (unsigned long long)reinterpret_cast<uintptr_t>(c->result));
+                                fflush(stderr);
+                                if (c->caller_fiber) {
+                                    SwitchToFiber(c->caller_fiber);
                                 }
-                            } while (wr != WAIT_OBJECT_0 &&
-                                     wr != WAIT_FAILED);
-                            CloseHandle(inner_handle);
+                            }
+                        };
+
+                        LPVOID ctrl_caller_fiber = ConvertThreadToFiber(nullptr);
+                        bool ctrl_was_already_fiber = false;
+                        if (!ctrl_caller_fiber) {
+                            ctrl_caller_fiber = GetCurrentFiber();
+                            ctrl_was_already_fiber = true;
+                        }
+                        ctrl_ctx.caller_fiber = ctrl_caller_fiber;
+
+                        constexpr SIZE_T ctrl_fiber_stack = 32 * 1024 * 1024;
+                        LPVOID ctrl_worker_fiber = CreateFiber(
+                            ctrl_fiber_stack, CtrlFiberFn::run, &ctrl_ctx);
+
+                        if (ctrl_worker_fiber && ctrl_caller_fiber) {
+                            // Pump messages while the fiber runs
+                            // createDocumentControllerWithDocument.
+                            SwitchToFiber(ctrl_worker_fiber);
+                            DeleteFiber(ctrl_worker_fiber);
+                        } else {
+                            if (ctrl_worker_fiber) DeleteFiber(ctrl_worker_fiber);
+                            // Fallback: direct call
+                            ctrl_ctx.result =
+                                factory->createDocumentControllerWithDocument(
+                                    ctrl_ctx.hi, ctrl_ctx.props);
+                        }
+
+                        if (!ctrl_was_already_fiber) {
+                            ConvertFiberToThread();
                         }
 
                         const ARA::ARADocumentControllerInstance* ctrl =
-                            ctrl_future.get();
+                            ctrl_ctx.result;
 
                         if (!ctrl) {
                             logger_.log(
