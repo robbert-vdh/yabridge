@@ -926,16 +926,19 @@ void Vst3Bridge::run() {
                         // dereference and call without null-checking, which
                         // would crash with a NULL function pointer.
                         struct AssertHolder {
-                            static void ARA_CALL noop_assert(
+                            static void WINAPI noop_assert(
                                 ARA::ARAAssertCategory /*category*/,
                                 const void* /*problematicArgument*/,
                                 const char* /*diagnosis*/) {
                                 // Intentionally empty — ARA spec allows the
                                 // host to silently suppress assertions.
+                                // WINAPI ensures Windows calling convention
+                                // so Melodyne can call this safely.
                             }
                         };
                         static ARA::ARAAssertFunction assert_fn =
-                            &AssertHolder::noop_assert;
+                            reinterpret_cast<ARA::ARAAssertFunction>(
+                                &AssertHolder::noop_assert);
                         if (request.config.has_config) {
                             // Always use kARAInterfaceConfigurationMinSize
                             // (24) as structSize so Melodyne knows
