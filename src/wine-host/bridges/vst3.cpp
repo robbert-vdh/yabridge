@@ -1139,195 +1139,161 @@ void Vst3Bridge::run() {
             },
             [&](const YaARAFactory::CreateDocumentController& request)
                 -> YaARAFactory::CreateDocumentController::Response {
-                // Carla is calling createDocumentControllerWithDocument().
-                // This call needs:
-                //   1. A large stack (Melodyne's init path is deep)
-                //   2. Win32 message pumping (Melodyne posts messages to itself)
-                // We use a 32MB CreateThread as the message-pumping thread,
-                // and a nested thread to do the actual blocking call.
+                // createDocumentControllerWithDocument() needs:
+                //   1. GUI thread (for Win32 message pumping — Melodyne posts
+                //      messages to windows it created on the GUI thread)
+                //   2. A large stack (32MB fiber — CreateThread overflows
+                //      because Wine only commits 4KB initially)
+                // Same pattern as initializeARAWithConfiguration.
                 std::promise<native_size_t> result_promise;
                 auto result_future = result_promise.get_future();
 
-                auto outer_fn = fu2::unique_function<void()>(
-                    [&, promise = std::move(result_promise)]() mutable {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                main_context_.run_in_context([&]() -> void {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
 
-                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
-                            entry_point(instance.object);
-                        if (!entry_point) {
-                            logger_.log(
-                                "WARNING: CreateDocumentController: instance "
-                                "does not support ARA::IPlugInEntryPoint");
-                            OleUninitialize();
-                            promise.set_value(0);
-                            return;
-                        }
-
-                        const ARA::ARAFactory* factory =
-                            entry_point->getFactory();
-                        if (!factory ||
-                            !factory->createDocumentControllerWithDocument) {
-                            logger_.log(
-                                "WARNING: CreateDocumentController: factory "
-                                "has no createDocumentControllerWithDocument");
-                            OleUninitialize();
-                            promise.set_value(0);
-                            return;
-                        }
-
-                        const auto* linux_host_instance =
-                            reinterpret_cast<
-                                const ARA::ARADocumentControllerHostInstance*>(
-                                static_cast<uintptr_t>(
-                                    request.host_instance_ptr));
-
-                        instance.ara_document_controller_host_instance =
-                            std::make_unique<
-                                WineARADocumentControllerHostInstance>(
-                                linux_host_instance,
-                                request.instance_id,
-                                *this);
-
-                        ARA::ARADocumentProperties props{};
-                        props.structSize = static_cast<ARA::ARASize>(
-                            ARA_IMPLEMENTED_STRUCT_SIZE(ARADocumentProperties,
-                                                        name));
-                        const char* name_cstr =
-                            request.document_name.empty()
-                                ? nullptr
-                                : request.document_name.c_str();
-                        props.name = name_cstr;
-
-                        // Force-create a message queue on this thread before
-                        // spawning the nested fiber.
-                        {
-                            MSG dummy;
-                            PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
-                        }
-
-                        struct CtrlFiberCtx {
-                            const ARA::ARAFactory* factory;
-                            const ARA::ARADocumentControllerHostInstance* hi;
-                            const ARA::ARADocumentProperties* props;
-                            LPVOID caller_fiber = nullptr;
-                            const ARA::ARADocumentControllerInstance* result = nullptr;
-                        } ctrl_ctx{ factory,
-                                    instance.ara_document_controller_host_instance->get(),
-                                    &props };
-
-                        // Debug log
-                        {
-                            const ARA::ARADocumentControllerHostInstance* hi = ctrl_ctx.hi;
-                            char dbg_buf[256];
-                            snprintf(dbg_buf, sizeof(dbg_buf),
-                                "DEBUG: createDocumentControllerWithDocument: "
-                                "host_instance=0x%016llx structSize=%llu "
-                                "audioAccessRef=0x%016llx archivingRef=0x%016llx "
-                                "audioAccessIface=0x%016llx archivingIface=0x%016llx",
-                                (unsigned long long)reinterpret_cast<uintptr_t>(hi),
-                                hi ? (unsigned long long)hi->structSize : 0ULL,
-                                hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerHostRef) : 0ULL,
-                                hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerHostRef) : 0ULL,
-                                hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerInterface) : 0ULL,
-                                hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerInterface) : 0ULL);
-                            fprintf(stderr, "%s\n", dbg_buf);
-                            snprintf(dbg_buf, sizeof(dbg_buf),
-                                "DEBUG: createDocumentControllerWithDocument: "
-                                "props=0x%016llx structSize=%llu name=%s",
-                                (unsigned long long)reinterpret_cast<uintptr_t>(&props),
-                                (unsigned long long)props.structSize,
-                                props.name ? props.name : "(null)");
-                            fprintf(stderr, "%s\n", dbg_buf);
-                            fflush(stderr);
-                        }
-
-                        // Use a fiber with 32MB stack so Wine commits the
-                        // full stack upfront (same pattern as
-                        // initializeARAWithConfiguration). The outer thread
-                        // pumps Win32 messages while the fiber runs.
-                        struct CtrlFiberFn {
-                            static void WINAPI run(LPVOID param) {
-                                auto* c = static_cast<CtrlFiberCtx*>(param);
-                                fprintf(stderr,
-                                    "DEBUG: createDocumentControllerWithDocument fiber: calling now\n");
-                                fflush(stderr);
-                                c->result =
-                                    c->factory->createDocumentControllerWithDocument(
-                                        c->hi, c->props);
-                                fprintf(stderr,
-                                    "DEBUG: createDocumentControllerWithDocument fiber: returned 0x%016llx\n",
-                                    (unsigned long long)reinterpret_cast<uintptr_t>(c->result));
-                                fflush(stderr);
-                                if (c->caller_fiber) {
-                                    SwitchToFiber(c->caller_fiber);
-                                }
-                            }
-                        };
-
-                        LPVOID ctrl_caller_fiber = ConvertThreadToFiber(nullptr);
-                        bool ctrl_was_already_fiber = false;
-                        if (!ctrl_caller_fiber) {
-                            ctrl_caller_fiber = GetCurrentFiber();
-                            ctrl_was_already_fiber = true;
-                        }
-                        ctrl_ctx.caller_fiber = ctrl_caller_fiber;
-
-                        constexpr SIZE_T ctrl_fiber_stack = 32 * 1024 * 1024;
-                        LPVOID ctrl_worker_fiber = CreateFiber(
-                            ctrl_fiber_stack, CtrlFiberFn::run, &ctrl_ctx);
-
-                        if (ctrl_worker_fiber && ctrl_caller_fiber) {
-                            // Pump messages while the fiber runs
-                            // createDocumentControllerWithDocument.
-                            SwitchToFiber(ctrl_worker_fiber);
-                            DeleteFiber(ctrl_worker_fiber);
-                        } else {
-                            if (ctrl_worker_fiber) DeleteFiber(ctrl_worker_fiber);
-                            // Fallback: direct call
-                            ctrl_ctx.result =
-                                factory->createDocumentControllerWithDocument(
-                                    ctrl_ctx.hi, ctrl_ctx.props);
-                        }
-
-                        if (!ctrl_was_already_fiber) {
-                            ConvertFiberToThread();
-                        }
-
-                        const ARA::ARADocumentControllerInstance* ctrl =
-                            ctrl_ctx.result;
-
-                        if (!ctrl) {
-                            logger_.log(
-                                "WARNING: CreateDocumentController: Windows "
-                                "plugin returned null "
-                                "ARADocumentControllerInstance");
-                            instance.ara_document_controller_host_instance
-                                .reset();
-                            OleUninitialize();
-                            promise.set_value(0);
-                            return;
-                        }
-
-                        instance.ara_document_controller_instance = ctrl;
+                    Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                        entry_point(instance.object);
+                    if (!entry_point) {
                         logger_.log(
-                            "NOTE: CreateDocumentController: succeeded");
-                        OleUninitialize();
-                        promise.set_value(reinterpret_cast<native_size_t>(ctrl));
-                    });
+                            "WARNING: CreateDocumentController: instance "
+                            "does not support ARA::IPlugInEntryPoint");
+                        result_promise.set_value(0);
+                        return;
+                    }
 
-                constexpr SIZE_T ara_stack_size = 32 * 1024 * 1024;
-                HANDLE outer_handle = CreateThread(
-                    nullptr, ara_stack_size,
-                    reinterpret_cast<LPTHREAD_START_ROUTINE>(
-                        win32_thread_trampoline),
-                    new fu2::unique_function<void()>(std::move(outer_fn)),
-                    0, nullptr);
+                    const ARA::ARAFactory* factory =
+                        entry_point->getFactory();
+                    if (!factory ||
+                        !factory->createDocumentControllerWithDocument) {
+                        logger_.log(
+                            "WARNING: CreateDocumentController: factory "
+                            "has no createDocumentControllerWithDocument");
+                        result_promise.set_value(0);
+                        return;
+                    }
 
-                if (outer_handle) {
-                    WaitForSingleObject(outer_handle, INFINITE);
-                    CloseHandle(outer_handle);
-                }
+                    const auto* linux_host_instance =
+                        reinterpret_cast<
+                            const ARA::ARADocumentControllerHostInstance*>(
+                            static_cast<uintptr_t>(
+                                request.host_instance_ptr));
+
+                    instance.ara_document_controller_host_instance =
+                        std::make_unique<
+                            WineARADocumentControllerHostInstance>(
+                            linux_host_instance,
+                            request.instance_id,
+                            *this);
+
+                    ARA::ARADocumentProperties props{};
+                    props.structSize = static_cast<ARA::ARASize>(
+                        ARA_IMPLEMENTED_STRUCT_SIZE(ARADocumentProperties,
+                                                    name));
+                    const char* name_cstr =
+                        request.document_name.empty()
+                            ? nullptr
+                            : request.document_name.c_str();
+                    props.name = name_cstr;
+
+                    // Force-create a message queue on this (GUI) thread.
+                    {
+                        MSG dummy;
+                        PeekMessageW(&dummy, nullptr, 0, 0, PM_NOREMOVE);
+                    }
+
+                    // Debug log
+                    {
+                        const ARA::ARADocumentControllerHostInstance* hi =
+                            instance.ara_document_controller_host_instance->get();
+                        char dbg_buf[256];
+                        snprintf(dbg_buf, sizeof(dbg_buf),
+                            "DEBUG: createDocumentControllerWithDocument: "
+                            "host_instance=0x%016llx structSize=%llu "
+                            "audioAccessIface=0x%016llx archivingIface=0x%016llx",
+                            (unsigned long long)reinterpret_cast<uintptr_t>(hi),
+                            hi ? (unsigned long long)hi->structSize : 0ULL,
+                            hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->audioAccessControllerInterface) : 0ULL,
+                            hi ? (unsigned long long)reinterpret_cast<uintptr_t>(hi->archivingControllerInterface) : 0ULL);
+                        fprintf(stderr, "%s\n", dbg_buf);
+                        fflush(stderr);
+                    }
+
+                    struct CtrlFiberCtx {
+                        const ARA::ARAFactory* factory;
+                        const ARA::ARADocumentControllerHostInstance* hi;
+                        const ARA::ARADocumentProperties* props;
+                        LPVOID caller_fiber = nullptr;
+                        const ARA::ARADocumentControllerInstance* result = nullptr;
+                    } ctrl_ctx{
+                        factory,
+                        instance.ara_document_controller_host_instance->get(),
+                        &props
+                    };
+
+                    struct CtrlFiberFn {
+                        static void WINAPI run(LPVOID param) {
+                            auto* c = static_cast<CtrlFiberCtx*>(param);
+                            fprintf(stderr,
+                                "DEBUG: createDocumentControllerWithDocument fiber: calling\n");
+                            fflush(stderr);
+                            c->result =
+                                c->factory->createDocumentControllerWithDocument(
+                                    c->hi, c->props);
+                            fprintf(stderr,
+                                "DEBUG: createDocumentControllerWithDocument fiber: returned 0x%016llx\n",
+                                (unsigned long long)reinterpret_cast<uintptr_t>(c->result));
+                            fflush(stderr);
+                            if (c->caller_fiber) {
+                                SwitchToFiber(c->caller_fiber);
+                            }
+                        }
+                    };
+
+                    LPVOID caller_fiber = ConvertThreadToFiber(nullptr);
+                    bool was_already_fiber = false;
+                    if (!caller_fiber) {
+                        caller_fiber = GetCurrentFiber();
+                        was_already_fiber = true;
+                    }
+                    ctrl_ctx.caller_fiber = caller_fiber;
+
+                    constexpr SIZE_T ctrl_fiber_stack = 32 * 1024 * 1024;
+                    LPVOID worker_fiber = CreateFiber(
+                        ctrl_fiber_stack, CtrlFiberFn::run, &ctrl_ctx);
+
+                    if (worker_fiber && caller_fiber) {
+                        // Pump messages on GUI thread while fiber runs.
+                        SwitchToFiber(worker_fiber);
+                        DeleteFiber(worker_fiber);
+                    } else {
+                        if (worker_fiber) DeleteFiber(worker_fiber);
+                        ctrl_ctx.result =
+                            factory->createDocumentControllerWithDocument(
+                                ctrl_ctx.hi, ctrl_ctx.props);
+                    }
+
+                    if (!was_already_fiber) {
+                        ConvertFiberToThread();
+                    }
+
+                    const ARA::ARADocumentControllerInstance* ctrl =
+                        ctrl_ctx.result;
+
+                    if (!ctrl) {
+                        logger_.log(
+                            "WARNING: CreateDocumentController: Windows "
+                            "plugin returned null "
+                            "ARADocumentControllerInstance");
+                        instance.ara_document_controller_host_instance.reset();
+                        result_promise.set_value(0);
+                        return;
+                    }
+
+                    instance.ara_document_controller_instance = ctrl;
+                    logger_.log("NOTE: CreateDocumentController: succeeded");
+                    result_promise.set_value(reinterpret_cast<native_size_t>(ctrl));
+                }).wait();
 
                 return PrimitiveResponse<native_size_t>(result_future.get());
             },
