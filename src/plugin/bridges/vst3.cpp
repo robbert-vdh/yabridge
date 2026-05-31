@@ -407,6 +407,195 @@ Vst3PluginBridge::Vst3PluginBridge(const ghc::filesystem::path& plugin_path)
                     return proxy_object.unit_handler_2_
                         ->notifyUnitByBusChange();
                 },
+                // -------------------------------------------------------
+                // YaARAHostCallbacks — forwarded from the Wine-side
+                // WineARADocumentControllerHostInstance stubs to Carla.
+                // Each handler recovers the original Linux-side host ref
+                // and calls the corresponding Carla function pointer.
+                // -------------------------------------------------------
+                [&](const YaARAHostCallbacks::CreateAudioReaderForSource&
+                        request)
+                    -> YaARAHostCallbacks::CreateAudioReaderForSource::
+                        Response {
+                    const auto& [proxy_object, _] =
+                        get_proxy(request.instance_id);
+
+                    auto* factory = proxy_object.ara_factory_proxy();
+                    if (!factory || !factory->linux_host_instance_) {
+                        return PrimitiveResponse<native_size_t>(0);
+                    }
+
+                    const auto* hi = factory->linux_host_instance_;
+                    if (!hi->audioAccessControllerInterface ||
+                        !hi->audioAccessControllerInterface
+                             ->createAudioReaderForSource) {
+                        return PrimitiveResponse<native_size_t>(0);
+                    }
+
+                    const ARA::ARAAudioReaderHostRef reader =
+                        hi->audioAccessControllerInterface
+                            ->createAudioReaderForSource(
+                                hi->audioAccessControllerHostRef,
+                                reinterpret_cast<ARA::ARAAudioSourceHostRef>(
+                                    static_cast<uintptr_t>(
+                                        request.audio_source_host_ref)),
+                                request.use_64bit_samples);
+
+                    return PrimitiveResponse<native_size_t>(
+                        reinterpret_cast<native_size_t>(reader));
+                },
+                [&](const YaARAHostCallbacks::ReadAudioSamples& request)
+                    -> YaARAHostCallbacks::ReadAudioSamples::Response {
+                    // Audio sample proxying requires shared memory — stub
+                    // returns kARAFalse so the plugin handles it gracefully.
+                    (void)request;
+                    return PrimitiveResponse<ARA::ARABool>(ARA::kARAFalse);
+                },
+                [&](const YaARAHostCallbacks::DestroyAudioReader& request)
+                    -> YaARAHostCallbacks::DestroyAudioReader::Response {
+                    const auto& [proxy_object, _] =
+                        get_proxy(request.instance_id);
+
+                    auto* factory = proxy_object.ara_factory_proxy();
+                    if (!factory || !factory->linux_host_instance_) {
+                        return Ack{};
+                    }
+
+                    const auto* hi = factory->linux_host_instance_;
+                    if (hi->audioAccessControllerInterface &&
+                        hi->audioAccessControllerInterface->destroyAudioReader) {
+                        hi->audioAccessControllerInterface->destroyAudioReader(
+                            hi->audioAccessControllerHostRef,
+                            reinterpret_cast<ARA::ARAAudioReaderHostRef>(
+                                static_cast<uintptr_t>(
+                                    request.audio_reader_host_ref)));
+                    }
+                    return Ack{};
+                },
+                [&](const YaARAHostCallbacks::GetArchiveSize& request)
+                    -> YaARAHostCallbacks::GetArchiveSize::Response {
+                    const auto& [proxy_object, _] =
+                        get_proxy(request.instance_id);
+
+                    auto* factory = proxy_object.ara_factory_proxy();
+                    if (!factory || !factory->linux_host_instance_) {
+                        return PrimitiveResponse<uint64_t>(0);
+                    }
+
+                    const auto* hi = factory->linux_host_instance_;
+                    if (!hi->archivingControllerInterface ||
+                        !hi->archivingControllerInterface->getArchiveSize) {
+                        return PrimitiveResponse<uint64_t>(0);
+                    }
+
+                    const ARA::ARASize size =
+                        hi->archivingControllerInterface->getArchiveSize(
+                            hi->archivingControllerHostRef,
+                            reinterpret_cast<ARA::ARAArchiveReaderHostRef>(
+                                static_cast<uintptr_t>(
+                                    request.archive_reader_host_ref)));
+                    return PrimitiveResponse<uint64_t>(
+                        static_cast<uint64_t>(size));
+                },
+                [&](YaARAHostCallbacks::ReadBytesFromArchive& request)
+                    -> YaARAHostCallbacks::ReadBytesFromArchive::Response {
+                    const auto& [proxy_object, _] =
+                        get_proxy(request.instance_id);
+
+                    auto* factory = proxy_object.ara_factory_proxy();
+                    if (!factory || !factory->linux_host_instance_) {
+                        return PrimitiveResponse<ARA::ARABool>(ARA::kARAFalse);
+                    }
+
+                    const auto* hi = factory->linux_host_instance_;
+                    if (!hi->archivingControllerInterface ||
+                        !hi->archivingControllerInterface
+                             ->readBytesFromArchive) {
+                        return PrimitiveResponse<ARA::ARABool>(ARA::kARAFalse);
+                    }
+
+                    request.buffer.resize(
+                        static_cast<size_t>(request.length));
+                    const ARA::ARABool ok =
+                        hi->archivingControllerInterface->readBytesFromArchive(
+                            hi->archivingControllerHostRef,
+                            reinterpret_cast<ARA::ARAArchiveReaderHostRef>(
+                                static_cast<uintptr_t>(
+                                    request.archive_reader_host_ref)),
+                            static_cast<ARA::ARASize>(request.position),
+                            static_cast<ARA::ARASize>(request.length),
+                            request.buffer.data());
+                    return PrimitiveResponse<ARA::ARABool>(ok);
+                },
+                [&](const YaARAHostCallbacks::WriteBytesToArchive& request)
+                    -> YaARAHostCallbacks::WriteBytesToArchive::Response {
+                    const auto& [proxy_object, _] =
+                        get_proxy(request.instance_id);
+
+                    auto* factory = proxy_object.ara_factory_proxy();
+                    if (!factory || !factory->linux_host_instance_) {
+                        return PrimitiveResponse<ARA::ARABool>(ARA::kARAFalse);
+                    }
+
+                    const auto* hi = factory->linux_host_instance_;
+                    if (!hi->archivingControllerInterface ||
+                        !hi->archivingControllerInterface->writeBytesToArchive) {
+                        return PrimitiveResponse<ARA::ARABool>(ARA::kARAFalse);
+                    }
+
+                    const ARA::ARABool ok =
+                        hi->archivingControllerInterface->writeBytesToArchive(
+                            hi->archivingControllerHostRef,
+                            reinterpret_cast<ARA::ARAArchiveWriterHostRef>(
+                                static_cast<uintptr_t>(
+                                    request.archive_writer_host_ref)),
+                            static_cast<ARA::ARASize>(request.position),
+                            static_cast<ARA::ARASize>(request.buffer.size()),
+                            request.buffer.data());
+                    return PrimitiveResponse<ARA::ARABool>(ok);
+                },
+                [&](const YaARAHostCallbacks::NotifyDocumentArchivingProgress&
+                        request)
+                    -> YaARAHostCallbacks::NotifyDocumentArchivingProgress::
+                        Response {
+                    const auto& [proxy_object, _] =
+                        get_proxy(request.instance_id);
+
+                    auto* factory = proxy_object.ara_factory_proxy();
+                    if (factory && factory->linux_host_instance_) {
+                        const auto* hi = factory->linux_host_instance_;
+                        if (hi->archivingControllerInterface &&
+                            hi->archivingControllerInterface
+                                ->notifyDocumentArchivingProgress) {
+                            hi->archivingControllerInterface
+                                ->notifyDocumentArchivingProgress(
+                                    hi->archivingControllerHostRef,
+                                    request.value);
+                        }
+                    }
+                    return Ack{};
+                },
+                [&](const YaARAHostCallbacks::
+                        NotifyDocumentUnarchivingProgress& request)
+                    -> YaARAHostCallbacks::NotifyDocumentUnarchivingProgress::
+                        Response {
+                    const auto& [proxy_object, _] =
+                        get_proxy(request.instance_id);
+
+                    auto* factory = proxy_object.ara_factory_proxy();
+                    if (factory && factory->linux_host_instance_) {
+                        const auto* hi = factory->linux_host_instance_;
+                        if (hi->archivingControllerInterface &&
+                            hi->archivingControllerInterface
+                                ->notifyDocumentUnarchivingProgress) {
+                            hi->archivingControllerInterface
+                                ->notifyDocumentUnarchivingProgress(
+                                    hi->archivingControllerHostRef,
+                                    request.value);
+                        }
+                    }
+                    return Ack{};
+                },
             });
     });
 }

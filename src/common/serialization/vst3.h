@@ -65,6 +65,12 @@ using Vst3ControlRequest =
                  // we had to move this message to the main `Vst3PluginProxy`
                  // class
                  Vst3PluginProxy::Initialize,
+                 YaARAPlugInEntryPoint::GetFactory,
+                 YaARAPlugInEntryPoint::BindToDocumentController,
+                 YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles,
+                 YaARAFactory::Initialize,
+                 YaARAFactory::Uninitialize,
+                 YaARAFactory::CreateDocumentController,
                  // These are defined in both `IComponent` and `IEditController`
                  Vst3PluginProxy::SetState,
                  Vst3PluginProxy::GetState,
@@ -271,7 +277,17 @@ using Vst3CallbackRequest =
                  YaProgress::Finish,
                  YaUnitHandler::NotifyUnitSelection,
                  YaUnitHandler::NotifyProgramListChange,
-                 YaUnitHandler2::NotifyUnitByBusChange>;
+                 YaUnitHandler2::NotifyUnitByBusChange,
+                 // ARA host callbacks forwarded from the Wine-side
+                 // WineARADocumentControllerHostInstance stubs to Carla
+                 YaARAHostCallbacks::CreateAudioReaderForSource,
+                 YaARAHostCallbacks::ReadAudioSamples,
+                 YaARAHostCallbacks::DestroyAudioReader,
+                 YaARAHostCallbacks::GetArchiveSize,
+                 YaARAHostCallbacks::ReadBytesFromArchive,
+                 YaARAHostCallbacks::WriteBytesToArchive,
+                 YaARAHostCallbacks::NotifyDocumentArchivingProgress,
+                 YaARAHostCallbacks::NotifyDocumentUnarchivingProgress>;
 
 template <typename S>
 void serialize(S& s, Vst3CallbackRequest& payload) {

@@ -16,12 +16,23 @@
 
 #include "plugin-proxy.h"
 
+namespace {
+const Steinberg::FUID kAraPlugInEntryPointLegacyIid(
+    0x3D4BD6B5, 0x913A4FD2, 0xA886E768, 0xA5EB92C1);
+const Steinberg::FUID kAraPlugInEntryPoint2AgreementsIid(
+    0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0);
+const Steinberg::FUID kAraPlugInEntryPoint2AltIid(
+    0x8683B01F, 0x7B354F70, 0xA2651DEC, 0x353AF4FF);
+}  // namespace
+
 Vst3PluginProxy::ConstructArgs::ConstructArgs() noexcept {}
 
 Vst3PluginProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     size_t instance_id) noexcept
     : instance_id(instance_id),
+      ara_plugin_entry_args(object),
+      ara_plugin_entry_2_args(object),
       audio_presentation_latency_args(object),
       audio_processor_args(object),
       automation_state_args(object),
@@ -47,7 +58,9 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
 // NOTE: This has to be kept in sync with
 //       `Vst3PluginProxy::updated_plugin_interfaces()`
 Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
-    : YaAudioPresentationLatency(
+    : YaARAPlugInEntryPoint(std::move(args.ara_plugin_entry_args)),
+      YaARAPlugInEntryPoint2(std::move(args.ara_plugin_entry_2_args)),
+      YaAudioPresentationLatency(
           std::move(args.audio_presentation_latency_args)),
       YaAudioProcessor(std::move(args.audio_processor_args)),
       YaAutomationState(std::move(args.automation_state_args)),
@@ -103,6 +116,20 @@ Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
                 static_cast<YaPluginBase*>(this));
             return ::Steinberg ::kResultOk;
         }
+    }
+    if (YaARAPlugInEntryPoint::supported()) {
+        QUERY_INTERFACE(_iid, obj, kAraPlugInEntryPointLegacyIid,
+                        ARA::IPlugInEntryPoint)
+        QUERY_INTERFACE(_iid, obj, ARA::IPlugInEntryPoint::iid,
+                        ARA::IPlugInEntryPoint)
+    }
+    if (YaARAPlugInEntryPoint2::supported()) {
+        QUERY_INTERFACE(_iid, obj, kAraPlugInEntryPoint2AgreementsIid,
+                        ARA::IPlugInEntryPoint2)
+        QUERY_INTERFACE(_iid, obj, kAraPlugInEntryPoint2AltIid,
+                        ARA::IPlugInEntryPoint2)
+        QUERY_INTERFACE(_iid, obj, ARA::IPlugInEntryPoint2::iid,
+                        ARA::IPlugInEntryPoint2)
     }
     if (YaAudioPresentationLatency::supported()) {
         QUERY_INTERFACE(_iid, obj,

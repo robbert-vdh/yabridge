@@ -1,0 +1,55 @@
+19:27:55 [Melodyne-JLNQSZiw] Initializing yabridge version cf2a2c7d
+19:27:55 [Melodyne-JLNQSZiw] library:       '/home/samuel/.local/share/yabridge/libyabridge-vst3.so'
+19:27:55 [Melodyne-JLNQSZiw] host:          '/home/samuel/.local/share/yabridge/yabridge-host.exe'
+19:27:55 [Melodyne-JLNQSZiw] plugin:        '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:27:55 [Melodyne-JLNQSZiw] plugin type:   'VST3'
+19:27:55 [Melodyne-JLNQSZiw] realtime:      'no'
+19:27:55 [Melodyne-JLNQSZiw] sockets:       '/run/user/1000/yabridge-Melodyne-JLNQSZiw'
+19:27:55 [Melodyne-JLNQSZiw] wine prefix:   '/home/samuel/.wine'
+19:27:55 [Melodyne-JLNQSZiw] wine version:  '9.0 (Ubuntu 9.0~repack-4build3)'
+19:27:55 [Melodyne-JLNQSZiw] 
+19:27:55 [Melodyne-JLNQSZiw] config from:   '<defaults>'
+19:27:55 [Melodyne-JLNQSZiw] hosting mode:  'individually, 64-bit'
+19:27:55 [Melodyne-JLNQSZiw] other options: '<none>'
+19:27:55 [Melodyne-JLNQSZiw] 
+19:27:55 [Melodyne-JLNQSZiw] Enabled features:
+19:27:55 [Melodyne-JLNQSZiw] - bitbridge support
+19:27:55 [Melodyne-JLNQSZiw] - CLAP support
+19:27:55 [Melodyne-JLNQSZiw] - VST3 support
+19:27:55 [Melodyne-JLNQSZiw] 
+19:28:05 [Melodyne-JLNQSZiw] [Wine STDERR] Initializing yabridge host version cf2a2c7d
+19:28:05 [Melodyne-JLNQSZiw] [Wine STDERR] Preparing to load VST3 plugin at '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:28:10 [Melodyne-JLNQSZiw] [host -> plugin] >> GetPluginFactory()
+19:28:10 [Melodyne-JLNQSZiw] [plugin -> host] >> Requesting <Configuration>
+19:28:10 [Melodyne-JLNQSZiw] [plugin <- host]    <Configuration>
+19:28:10 [Melodyne-JLNQSZiw] [Wine STDERR] Finished initializing '/home/samuel/.wine/drive_c/Program Files/Common Files/VST3/Celemony/Melodyne/Melodyne.vst3'
+19:28:10 [Melodyne-JLNQSZiw] [host <- plugin]    <IPluginFactory2* with 2 registered classes>
+19:28:10 [Melodyne-JLNQSZiw] [unknown interface] In IPluginFactory::queryInterface(): {0x4555A2AB, 0xC1234E57, 0x9B122910, 0x36878931}
+19:28:10 [Melodyne-JLNQSZiw] [query interface] In IPluginFactory::queryInterface(): {0x0007B650, 0xF24B4C0B, 0xA464EDB9, 0xF00B2ABB}
+19:28:10 [Melodyne-JLNQSZiw] [host -> plugin] >> IPluginFactory::createInstance(cid = {0x5653544D, 0x6C70676D, 0x656C6F64, 0x796E6520}, _iid = IComponent::iid, &obj)
+19:28:10 [Melodyne-JLNQSZiw] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:28:10 [Melodyne-JLNQSZiw] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:28:10 [Melodyne-JLNQSZiw] [host <- plugin]    <FUnknown* #0>
+19:28:10 [Melodyne-JLNQSZiw] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:28:10 [Melodyne-JLNQSZiw] [host -> plugin] >> 0: IPluginBase::initialize(context = <FUnknown*>)
+19:28:11 [Melodyne-JLNQSZiw] [plugin -> host] >> 0: IHostApplication::getName(&name)
+19:28:11 [Melodyne-JLNQSZiw] [plugin <- host]    kResultOk, "REAPER"
+19:28:11 [Melodyne-JLNQSZiw] [plugin <- host]    kResultOk, "REAPER"
+:getName(&name)
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0x97E507DA, 0xE5594EEA, 0xA5AC4042, 0xE458F2B4}
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] [query interface] In FUnknown::queryInterface(): {0x58E595CC, 0xDB2D4969, 0x8B6AAF8C, 0x36A664E5}
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCC0B7716, 0x362B4EE5, 0x89EE5F41, 0x5458463F}
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xCEF07C2D, 0x85C843DC, 0xB8C7A67D, 0xC016DC54}
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] [unknown interface] In FUnknown::queryInterface(): {0xEEC89683, 0x80DB4336, 0x9177273E, 0x138A763B}
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] DETECTED ARA PLUGIN CAPABILITY (ARA::IPlugInEntryPoint)!
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] DETECTED ARA2 PLUGIN CAPABILITY (ARA::IPlugInEntryPoint2)!
+19:28:11 [Melodyne-JLNQSZiw] [host <- plugin]    kResultOk
+19:28:11 [Melodyne-JLNQSZiw] [query interface] In FUnknown::queryInterface(): {0x12814E54, 0xA1CE4076, 0x82B96813, 0x16950BD6}
+19:28:11 [Melodyne-JLNQSZiw] [query interface] In FUnknown::queryInterface(): {0xCD9A5913, 0xC9EB46D7, 0x96CA53AD, 0xD1DB89F5}
+19:28:11 [Melodyne-JLNQSZiw] [host -> plugin] >> 0: ARA::IPlugInEntryPoint::getFactory()
+19:28:11 [Melodyne-JLNQSZiw] [host <- plugin]    supported
+19:28:11 [Melodyne-JLNQSZiw] [host -> plugin] >> 0: ARAFactory::initializeARAWithConfiguration(desiredApiGeneration = 4)
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] NOTE: ARA initializeARAWithConfiguration: switching to 32MB fiber
+19:28:11 [Melodyne-JLNQSZiw] [Wine STDERR] wine: Unhandled page fault on read access to FFFFFFFFFFFFFFFF at address 00000001019E1210 (thread 0118), starting debugger...
+19:28:17 [Melodyne-JLNQSZiw] [Wine STDERR] wine: Read access denied for device L"\\??\\Z:\\", FS volume label and serial are not available.

@@ -92,6 +92,99 @@ void Vst3PluginProxyImpl::clear_caches() noexcept {
     function_result_cache_ = FunctionResultCache{};
 }
 
+// From `ARA::IPlugInEntryPoint`
+// These stubs are never reached because `queryInterface()` does not expose the
+// ARA interfaces until they are fully proxied. They exist only to satisfy the
+// abstract base class requirements of `YaARAPlugInEntryPoint` and
+// `YaARAPlugInEntryPoint2`.
+
+const ARA::ARAFactory* PLUGIN_API Vst3PluginProxyImpl::getFactory() {
+    const YaARAPlugInEntryPoint::GetFactoryResponse response =
+        bridge_.send_message(
+            YaARAPlugInEntryPoint::GetFactory{.instance_id = instance_id()});
+    if (!response.supported) {
+        return nullptr;
+    }
+
+    if (!ara_factory_proxy_) {
+        ara_factory_proxy_ = std::make_unique<AraFactoryProxy>(
+            bridge_, instance_id(), response.factory);
+    }
+
+    return ara_factory_proxy_->get();
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+const ARA::ARAPlugInExtensionInstance* PLUGIN_API
+Vst3PluginProxyImpl::bindToDocumentController(
+    ARA::ARADocumentControllerRef documentControllerRef) {
+    bridge_.logger_.log(
+        "NOTE: ARA::IPlugInEntryPoint::bindToDocumentController() called — "
+        "forwarding to Windows plugin via IPC");
+
+    // Pass Carla's documentControllerRef directly to the wine host as an
+    // opaque integer. The wine host will create a Wine-side document controller
+    // proxy and call the Windows plugin's bindToDocumentController with the
+    // correct Wine-side ref.
+    const native_size_t result =
+        bridge_.send_message(YaARAPlugInEntryPoint::BindToDocumentController{
+            .instance_id = instance_id(),
+            .document_controller_ref =
+                reinterpret_cast<native_size_t>(documentControllerRef),
+        });
+
+    if (!result) {
+        bridge_.logger_.log(
+            "WARNING: bindToDocumentController() — Windows plugin returned "
+            "nullptr, returning null to host");
+        return nullptr;
+    }
+
+    if (!ara_plug_in_extension_proxy_) {
+        ara_plug_in_extension_proxy_ =
+            std::make_unique<AraPlugInExtensionProxy>();
+    }
+
+    return ara_plug_in_extension_proxy_->get();
+}
+#pragma GCC diagnostic pop
+
+// From `ARA::IPlugInEntryPoint2`
+const ARA::ARAPlugInExtensionInstance* PLUGIN_API
+Vst3PluginProxyImpl::bindToDocumentControllerWithRoles(
+    ARA::ARADocumentControllerRef documentControllerRef,
+    ARA::ARAPlugInInstanceRoleFlags knownRoles,
+    ARA::ARAPlugInInstanceRoleFlags assignedRoles) {
+    bridge_.logger_.log(
+        "NOTE: ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles() "
+        "called — forwarding to Windows plugin via IPC");
+
+    // Same as above: pass Carla's ref directly to the wine host.
+    const native_size_t result = bridge_.send_message(
+        YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles{
+            .instance_id = instance_id(),
+            .document_controller_ref =
+                reinterpret_cast<native_size_t>(documentControllerRef),
+            .known_roles = knownRoles,
+            .assigned_roles = assignedRoles,
+        });
+
+    if (!result) {
+        bridge_.logger_.log(
+            "WARNING: bindToDocumentControllerWithRoles() — Windows plugin "
+            "returned nullptr, returning null to host");
+        return nullptr;
+    }
+
+    if (!ara_plug_in_extension_proxy_) {
+        ara_plug_in_extension_proxy_ =
+            std::make_unique<AraPlugInExtensionProxy>();
+    }
+
+    return ara_plug_in_extension_proxy_->get();
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
     Steinberg::Vst::BusDirection dir,
     int32 busIndex,

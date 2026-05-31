@@ -31,6 +31,7 @@
 
 // Forward declarations
 class Vst3ContextMenuProxyImpl;
+class Vst3Bridge;
 
 /**
  * A holder for an object instance's `IPlugView` object and all smart pointers
@@ -94,6 +95,82 @@ struct Vst3PluginInterfaces {
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unit_info;
     Steinberg::FUnknownPtr<Steinberg::Vst::IXmlRepresentationController>
         xml_representation_controller;
+};
+
+/**
+ * A Wine-side proxy for the host's `ARADocumentControllerHostInstance`.
+ *
+ * When Carla calls `createDocumentControllerWithDocument()` on the ARA factory,
+ * it passes an `ARADocumentControllerHostInstance*` that lives in Linux address
+ * space. That pointer is invalid inside the Wine process. This struct owns a
+ * valid Wine-side `ARADocumentControllerHostInstance` whose C-style function
+ * pointer tables contain stub functions that forward every callback to Carla
+ * via IPC, using the captured Linux-side host refs as opaque identifiers.
+ *
+ * The two mandatory interfaces (audio access + archiving) are always populated.
+ * The three optional interfaces (content access, model update, playback
+ * control) are set to null — the ARA spec requires plug-ins to null-check them
+ * before use, so this is safe for an initial stub implementation.
+ *
+ * Lifetime: created when the Windows plugin calls
+ * `createDocumentControllerWithDocument()` and kept alive on
+ * `Vst3PluginInstance` until the instance is destroyed.
+ */
+struct WineARADocumentControllerHostInstance {
+    /**
+     * Construct the proxy from the Linux-side host instance pointer.
+     * Captures all host refs as opaque native_size_t values and populates the
+     * Wine-side function pointer tables with IPC-forwarding stubs.
+     *
+     * @param linux_host_instance  The Linux-side pointer passed by Carla.
+     * @param instance_id          The plugin instance this belongs to, used
+     *                             to route IPC callbacks.
+     * @param bridge               The bridge used to send IPC messages.
+     */
+    WineARADocumentControllerHostInstance(
+        const ARA::ARADocumentControllerHostInstance* linux_host_instance,
+        size_t instance_id,
+        Vst3Bridge& bridge,
+        native_size_t carla_document_controller_ref = 0) noexcept;
+
+    /**
+     * Return a pointer to the Wine-side host instance struct to pass to the
+     * Windows plugin's `createDocumentControllerWithDocument()`.
+     */
+    const ARA::ARADocumentControllerHostInstance* get() const noexcept {
+        return &host_instance_;
+    }
+
+    // -----------------------------------------------------------------------
+    // Opaque Linux-side host refs captured from the original host instance.
+    // These are passed back in every IPC callback so Carla can route them to
+    // the correct internal objects.
+    // -----------------------------------------------------------------------
+    native_size_t audio_access_controller_host_ref_ = 0;
+    native_size_t archiving_controller_host_ref_ = 0;
+
+    // Carla's opaque document controller ref, used as routing key for IPC
+    // callbacks when Carla calls bindToDocumentController() directly without
+    // going through createDocumentControllerWithDocument() on our proxy.
+    native_size_t carla_document_controller_ref_ = 0;
+
+    // -----------------------------------------------------------------------
+    // Wine-side function pointer tables.
+    // Each table is populated with static stub functions (defined in vst3.cpp)
+    // that capture `this` via the host ref and forward to Carla via IPC.
+    // -----------------------------------------------------------------------
+    ARA::ARAAudioAccessControllerInterface audio_access_iface_{};
+    ARA::ARAArchivingControllerInterface   archiving_iface_{};
+
+    // -----------------------------------------------------------------------
+    // The Wine-side host instance struct passed to the Windows plugin.
+    // Points into the tables above — must not be moved after construction.
+    // -----------------------------------------------------------------------
+    ARA::ARADocumentControllerHostInstance host_instance_{};
+
+    // Back-reference used by the static stub functions to reach the bridge.
+    size_t instance_id_ = 0;
+    Vst3Bridge* bridge_ = nullptr;
 };
 
 /**
@@ -230,6 +307,40 @@ struct Vst3PluginInstance {
      *       doesn't cause any freezes.
      */
     std::recursive_mutex get_size_mutex;
+
+    /**
+     * The `ARAPlugInExtensionInstance` returned by the Windows plugin when
+     * `bindToDocumentController[WithRoles]()` was called on it. We keep this
+     * alive for the lifetime of the plugin instance — the ARA spec requires the
+     * pointer to remain valid until the companion plug-in is destroyed.
+     */
+    const ARA::ARAPlugInExtensionInstance* ara_plug_in_extension = nullptr;
+
+    /**
+     * The `ARADocumentControllerInstance` returned by the Windows plugin's
+     * factory when `createDocumentControllerWithDocument()` was called. Kept
+     * alive for the lifetime of the plugin instance. The
+     * `documentControllerRef` inside is the valid Wine-side handle passed to
+     * `bindToDocumentController[WithRoles]()`.
+     */
+    const ARA::ARADocumentControllerInstance* ara_document_controller_instance =
+        nullptr;
+
+    /**
+     * The Wine-side proxy for the host's `ARADocumentControllerHostInstance`.
+     * Carla passes a Linux-side struct pointer to
+     * `createDocumentControllerWithDocument()`; that pointer is invalid in the
+     * Wine process. This proxy owns a valid Wine-side
+     * `ARADocumentControllerHostInstance` whose function pointer tables forward
+     * every callback back to Carla via IPC, using the captured Linux-side host
+     * refs as opaque identifiers.
+     *
+     * Created when the Windows plugin calls
+     * `createDocumentControllerWithDocument()` through `AraFactoryProxy`, and
+     * kept alive for the lifetime of the plugin instance.
+     */
+    std::unique_ptr<WineARADocumentControllerHostInstance>
+        ara_document_controller_host_instance;
 
     /**
      * This contains smart pointers to all VST3 plugin interfaces that can be

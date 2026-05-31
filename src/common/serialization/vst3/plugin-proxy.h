@@ -19,6 +19,7 @@
 #include "../../bitsery/ext/in-place-variant.h"
 
 #include "../common.h"
+#include "plugin/ara-plugin-entry.h"
 #include "plugin/audio-presentation-latency.h"
 #include "plugin/audio-processor.h"
 #include "plugin/automation-state.h"
@@ -68,7 +69,9 @@
  * implements any interface such an object might also implement, we can allow
  * perfect proxying behaviour for connecting components.
  */
-class Vst3PluginProxy : public YaAudioPresentationLatency,
+class Vst3PluginProxy : public YaARAPlugInEntryPoint,
+                        public YaARAPlugInEntryPoint2,
+                        public YaAudioPresentationLatency,
                         public YaAudioProcessor,
                         public YaAutomationState,
                         public YaComponent,
@@ -109,6 +112,8 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
          */
         native_size_t instance_id;
 
+        YaARAPlugInEntryPoint::ConstructArgs ara_plugin_entry_args;
+        YaARAPlugInEntryPoint2::ConstructArgs ara_plugin_entry_2_args;
         YaAudioPresentationLatency::ConstructArgs
             audio_presentation_latency_args;
         YaAudioProcessor::ConstructArgs audio_processor_args;
@@ -141,6 +146,8 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
+            s.object(ara_plugin_entry_args);
+            s.object(ara_plugin_entry_2_args);
             s.object(audio_presentation_latency_args);
             s.object(audio_processor_args);
             s.object(automation_state_args);

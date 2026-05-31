@@ -27,6 +27,11 @@ jobs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # ara-sdk is a submodule that itself contains nested submodules
+          # (ARA_API, ARA_Library, ARA_Examples). We need recursive
+          # initialization so that ARA_API/ARAVST3.h is present at build time.
+          submodules: recursive
       # Needed for git-describe to do anything useful, the safe directory
       # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
