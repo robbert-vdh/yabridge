@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <optional>
 
@@ -326,6 +327,19 @@ class Editor {
     std::array<int16_t, 2> get_parent_window_offset();
 
     /**
+     * Reposition our Win32 window to the given absolute screen coordinates.
+     *
+     * Wine 9.22+ maps mouse input using the pointer's X11 root coordinates
+     * relative to the win32-side window rect, but for unmanaged embedded
+     * windows it never updates that rect from X11 ("unmanaged windows are
+     * managed by the Win32 side", `winex11.drv/window.c`). Without this the
+     * rect stays wherever the window was created and all mouse input is
+     * offset by exactly the window's on-screen position. Keeping the win32
+     * rect in sync with the X11 position keeps input coordinates aligned.
+     */
+    void sync_win32_position(int16_t x, int16_t y);
+
+    /**
      * Reparent `child` to `new_parent`. This includes the flush.
      */
     void do_reparent(xcb_window_t child, xcb_window_t new_parent) const;
@@ -410,6 +424,25 @@ class Editor {
      * The X11 window handle of the window belonging to `win32_window_`.
      */
     const xcb_window_t wine_window_;
+    /**
+     * The last absolute screen position we synced to the win32 side with
+     * `sync_win32_position()`, to avoid redundant `SetWindowPos()` calls.
+     */
+    std::optional<std::array<int16_t, 2>> last_win32_position_;
+    /**
+     * A deferred `sync_win32_position()` target. While the window is being
+     * dragged we receive a stream of `ConfigureNotify` events, and syncing
+     * the win32 position on every one of them makes Wine repeatedly move its
+     * window, which is visible as flickering. Instead we defer the sync until
+     * the position has been stable for a bit (see `handle_x11_events()`).
+     * Mouse input during a window drag isn't meaningful anyway.
+     */
+    std::optional<std::array<int16_t, 2>> pending_win32_sync_;
+    /**
+     * The last time the parent window's position changed, used to debounce
+     * `pending_win32_sync_`.
+     */
+    std::chrono::steady_clock::time_point last_position_change_{};
     /**
      * The toplevel X11 window `parent_window_` is contained in, or
      * `parent_window_` if the host doesn't do any fancy window embedding. We'll
