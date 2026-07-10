@@ -77,8 +77,9 @@ constexpr uint32_t parent_event_mask =
  *       opening it.
  */
 constexpr uint32_t wrapper_event_mask =
-    XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-    XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE;
+    XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
+    XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_KEY_PRESS |
+    XCB_EVENT_MASK_KEY_RELEASE;
 
 /**
  * The name of the X11 property on the root window used to denote the active
@@ -397,6 +398,19 @@ Editor::Editor(MainContext& main_context,
     xcb_flush(x11_connection_.get());
 
     do_reparent(wine_window_, wrapper_window_.window_);
+
+    // Set the initial win32-side window position; without this mouse input
+    // is offset until the first time the plugin window is moved. Later
+    // updates happen from the `ConfigureNotify` handler in
+    // `handle_x11_events()`.
+    try {
+        const std::array<int16_t, 2> offset = get_parent_window_offset();
+        sync_win32_position(offset[0], offset[1]);
+    } catch (const std::runtime_error& error) {
+        std::cerr << "Could not set the initial editor window position:"
+                  << std::endl;
+        std::cerr << error.what() << std::endl;
+    }
 }
 
 void Editor::resize(uint16_t width, uint16_t height) {
@@ -479,12 +493,46 @@ std::array<int16_t, 2> Editor::get_parent_window_offset() {
     return {coord_reply->dst_x, coord_reply->dst_y};
 }
 
+void Editor::sync_win32_position(int16_t x, int16_t y) {
+    if (last_win32_position_ && (*last_win32_position_)[0] == x &&
+        (*last_win32_position_)[1] == y) {
+        return;
+    }
+    last_win32_position_ = {{x, y}};
+
+    logger_.log_editor_trace([&]() {
+        return "DEBUG: Syncing win32 window position to (" +
+               std::to_string(x) + ", " + std::to_string(y) + ")";
+    });
+
+    // Wine will react to this by also moving `wine_window_`, but since it
+    // treats the coordinates as being relative to `wrapper_window_` the window
+    // would end up in the wrong place. The X11 event loop moves it back to
+    // (0, 0) when it sees the resulting `ConfigureNotify`, and once Wine's
+    // window state settles the positions converge (the win32 rect stays at
+    // the absolute position, the X11 window stays at the wrapper's origin).
+    SetWindowPos(win32_window_.handle_, nullptr, x, y, 0, 0,
+                 SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE |
+                     SWP_NOSENDCHANGING | SWP_DEFERERASE);
+}
+
 void Editor::handle_x11_events() noexcept {
     // NOTE: Ardour will unmap the window instead of closing the editor. When
     //       the window is unmapped `wine_window_` doesn't exist and any X11
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
     try {
+        // Deferred win32 position sync, see `pending_win32_sync_`. This
+        // function runs on the event loop timer (~60 Hz), so this fires
+        // shortly after the window stops moving.
+        using namespace std::chrono_literals;
+        if (pending_win32_sync_ &&
+            std::chrono::steady_clock::now() - last_position_change_ > 150ms) {
+            const std::array<int16_t, 2> position = *pending_win32_sync_;
+            pending_win32_sync_.reset();
+            sync_win32_position(position[0], position[1]);
+        }
+
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection_.get())),
                generic_event != nullptr) {
@@ -642,6 +690,43 @@ void Editor::handle_x11_events() noexcept {
                             XCB_EVENT_MASK_STRUCTURE_NOTIFY |
                                 XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
                             reinterpret_cast<char*>(&translated_event));
+                        xcb_flush(x11_connection_.get());
+
+                        // Keep the win32-side window rect at the same absolute
+                        // position, since Wine 9.22+ uses it to map mouse
+                        // input but no longer derives it from X11 for
+                        // unmanaged embedded windows. This is deferred until
+                        // the position stabilizes to avoid flickering while
+                        // the window is being dragged. See
+                        // `sync_win32_position()` and `pending_win32_sync_`.
+                        pending_win32_sync_ = {
+                            {translated_event.x, translated_event.y}};
+                        last_position_change_ =
+                            std::chrono::steady_clock::now();
+                    }
+
+                    // Wine reacts to `SetWindowPos()` by moving `wine_window_`
+                    // to those same coordinates relative to `wrapper_window_`.
+                    // Wine's embedded windows are override-redirect, so this
+                    // bypasses our `SubstructureRedirect` interception above
+                    // and we can only correct it after the fact. Move the
+                    // window back to our wrapper's origin where it belongs.
+                    // Wine will observe the corrected position and settle.
+                    if (event->window == wine_window_ && !is_synthetic_event &&
+                        (event->x != 0 || event->y != 0)) {
+                        logger_.log_editor_trace([&]() {
+                            return "DEBUG: Wine moved its window to (" +
+                                   std::to_string(event->x) + ", " +
+                                   std::to_string(event->y) +
+                                   "), pinning it back to the wrapper origin";
+                        });
+
+                        const uint16_t value_mask =
+                            XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y;
+                        const std::array<uint32_t, 2> values{0, 0};
+                        xcb_configure_window(x11_connection_.get(),
+                                             wine_window_, value_mask,
+                                             values.data());
                         xcb_flush(x11_connection_.get());
                     }
                 } break;
