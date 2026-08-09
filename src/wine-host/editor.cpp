@@ -1221,7 +1221,7 @@ LRESULT CALLBACK window_proc(HWND handle,
         //       dragging a knob seem to still work fine despite this (based on
         //       TDR, Voxengo, and KiloHearts plugins). If at some point a
         //       plugin _does_ legitimately need to hide the cursor, we can
-        //       always add a `yabridge.toml` compatibilty option just for those
+        //       always add a `yabridge.toml` compatibility option just for those
         //       plugin and keep this as a default.
         case WM_SETCURSOR: {
             if (GetCursor() == nullptr) {
