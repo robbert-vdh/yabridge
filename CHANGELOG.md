@@ -10,6 +10,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed VST3 plugins potentially freezing in **Bitwig Studio** when a parameter
+  edit starts while Bitwig requests the plugin's state
+  ([#502](https://github.com/robbert-vdh/yabridge/issues/502)).
 - Fixed a compatibility issue with **Wine 9.22** and above that caused mouse
   clicks in plugin GUIs to not register properly. A massive thanks to
   [@rbernon](https://github.com/rbernon),
