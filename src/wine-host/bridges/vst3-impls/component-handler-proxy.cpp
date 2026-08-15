@@ -41,8 +41,9 @@ Vst3ComponentHandlerProxyImpl::queryInterface(const Steinberg::TUID _iid,
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::beginEdit(Steinberg::Vst::ParamID id) {
-    return bridge_.send_message(YaComponentHandler::BeginEdit{
-        .owner_instance_id = owner_instance_id(), .id = id});
+    return bridge_.send_mutually_recursive_message(
+        YaComponentHandler::BeginEdit{.owner_instance_id = owner_instance_id(),
+                                      .id = id});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::performEdit(
