@@ -36,6 +36,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       midi_mapping_args(object),
       note_expression_controller_args(object),
       parameter_function_name_args(object),
+      plug_in_entry_point_args(object),
       plugin_base_args(object),
       prefetchable_support_args(object),
       process_context_requirements_args(object),
@@ -66,6 +67,7 @@ Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
       YaNoteExpressionPhysicalUIMapping(
           std::move(args.note_expression_physical_ui_mapping_args)),
       YaParameterFunctionName(std::move(args.parameter_function_name_args)),
+      YaPlugInEntryPoint(std::move(args.plug_in_entry_point_args)),
       YaPluginBase(std::move(args.plugin_base_args)),
       YaPrefetchableSupport(std::move(args.prefetchable_support_args)),
       YaProcessContextRequirements(
@@ -196,6 +198,17 @@ Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
                         Steinberg::Vst::IXmlRepresentationController)
     }
 
+#ifdef WITH_ARA
+    if (YaPlugInEntryPoint::supports_plug_in_entry_point_2()) {
+        QUERY_INTERFACE(_iid, obj, ARA::IPlugInEntryPoint2::iid,
+                        ARA::IPlugInEntryPoint2)
+    }
+    if (YaPlugInEntryPoint::supports_plug_in_entry_point()) {
+        QUERY_INTERFACE(_iid, obj, ARA::IPlugInEntryPoint::iid,
+                        ARA::IPlugInEntryPoint)
+    }
+#endif
+
     *obj = nullptr;
     return Steinberg::kNoInterface;
 }
@@ -232,6 +245,8 @@ void Vst3PluginProxy::update_supported_interfaces(
         std::move(updated_interfaces.note_expression_physical_ui_mapping_args);
     YaParameterFunctionName::arguments_ =
         std::move(updated_interfaces.parameter_function_name_args);
+    YaPlugInEntryPoint::arguments_ =
+        std::move(updated_interfaces.plug_in_entry_point_args);
     YaPluginBase::arguments_ = std::move(updated_interfaces.plugin_base_args);
     YaPrefetchableSupport::arguments_ =
         std::move(updated_interfaces.prefetchable_support_args);

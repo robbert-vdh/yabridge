@@ -8,6 +8,15 @@ vst3 = subproject('vst3', version : '3.7.7')
 vst3_compiler_options = compiler_options + vst3.get_variable('compiler_options')
 vst3_include_dir = vst3.get_variable('include_dir')
 
+# The ARA API is headers-only. When enabled we pull in the subproject and add
+# its root directory to the include path alongside the VST3 SDK includes so
+# that `#include <ARAVST3.h>` works on both the native and Wine sides.
+ara_include_dirs = []
+if with_ara
+  ara = subproject('ara', version : '2.3')
+  ara_include_dirs = [ara.get_variable('ara_include_dir')]
+endif
+
 # We need to do some minor hacking to get the SDK to compile with winegcc. Most
 # notably some attributes are named differently, and the SDK uses 'Windows.h'
 # instead of 'windows.h' like how the file is actually called.
@@ -107,14 +116,14 @@ endif
 
 vst3_sdk_native_dep = declare_dependency(
   link_with : vst3_sdk_native,
-  include_directories : vst3_include_dir,
+  include_directories : [vst3_include_dir] + ara_include_dirs,
   compile_args : vst3_compiler_options,
 )
 
 if is_64bit_system
   vst3_sdk_hosting_wine_64bit_dep = declare_dependency(
     link_with : vst3_sdk_hosting_wine_64bit,
-    include_directories : vst3_include_dir,
+    include_directories : [vst3_include_dir] + ara_include_dirs,
     # This does mean that we now have a lot of defines in our code, but the
     # alternative would be patching every location in the SDK where they include
     # `windows.h`
@@ -125,7 +134,7 @@ endif
 if with_bitbridge
   vst3_sdk_hosting_wine_32bit_dep = declare_dependency(
     link_with : vst3_sdk_hosting_wine_32bit,
-    include_directories : vst3_include_dir,
+    include_directories : [vst3_include_dir] + ara_include_dirs,
     # This does mean that we now have a lot of defines in our code, but the
     # alternative would be patching every location in the SDK where they include
     # `windows.h`

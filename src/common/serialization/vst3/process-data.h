@@ -299,7 +299,6 @@ void serialize(S& s, Steinberg::Vst::ProcessContext& process_context) {
     s.value4b(process_context.timeSigDenominator);
     s.object(process_context.chord);
     s.value4b(process_context.smpteOffsetSubframes);
-    s.value4b(process_context.smpteOffsetSubframes);
     s.object(process_context.frameRate);
     s.value4b(process_context.samplesToNextClock);
 }

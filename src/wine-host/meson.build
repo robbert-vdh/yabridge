@@ -126,6 +126,10 @@ if with_vst3
     '../common/serialization/vst3/plugin/note-expression-controller.cpp',
     '../common/serialization/vst3/plugin/note-expression-physical-ui-mapping.cpp',
     '../common/serialization/vst3/plugin/parameter-function-name.cpp',
+    '../common/serialization/vst3/plugin/ara-iids.cpp',
+    '../common/serialization/vst3/plugin/ara-factory.cpp',
+    '../common/serialization/vst3/ara-document-controller.cpp',
+    '../common/serialization/vst3/plugin/plug-in-entry-point.cpp',
     '../common/serialization/vst3/plugin/plugin-base.cpp',
     '../common/serialization/vst3/plugin/prefetchable-support.cpp',
     '../common/serialization/vst3/plugin/process-context-requirements.cpp',
@@ -159,4 +163,9 @@ if with_vst3
     'bridges/vst3-impls/plug-frame-proxy.cpp',
     'bridges/vst3.cpp',
   )
+  if with_ara
+    host_sources += files(
+      'bridges/vst3-impls/ara-host-callback-proxies.cpp',
+    )
+  endif
 endif

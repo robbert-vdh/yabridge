@@ -20,6 +20,13 @@ option(
 )
 
 option(
+  'ara',
+  type : 'boolean',
+  value : false,
+  description : 'Experimental: Enable ARA (Audio Random Access) support. Requires VST3. Implements document controller creation, host callbacks, archive access, shared-memory audio reads, and plug-in extension binding.'
+)
+
+option(
   'winedbg',
   type : 'boolean',
   value : false,

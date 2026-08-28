@@ -24,6 +24,7 @@ with_bitbridge = get_option('bitbridge')
 with_clap = get_option('clap')
 with_winedbg = get_option('winedbg')
 with_vst3 = get_option('vst3')
+with_ara = get_option('ara')
 
 #
 # Compiler flags
@@ -93,7 +94,16 @@ wine_compiler_options = [
   '-D__WINE_SAL_H__',
 ]
 
-# NOTE: GCC doesn't 8-byte align doubles in structs on x86 for ABI-compatibilty
+if with_ara
+  # ARAInterface.h defines ARA_CALL as empty under GCC. In Winelib the host
+  # executable uses the System V AMD64 ABI but must call Windows PE functions
+  # (and receive callbacks from them) using the Microsoft x64 ABI. Defining
+  # ARA_CALL globally ensures all ARA C function pointers carry the right ABI
+  # annotation regardless of unity build include order.
+  wine_compiler_options += ['-DARA_CALL=__attribute__((ms_abi))']
+endif
+
+# NOTE: GCC doesn't 8-byte align doubles in structs on x86 for ABI-compatibility
 #       reasons, but MSVC++ does. We need to force this same alignment to be
 #       ABI-compatible with 32-bit binaries created with MSVC++ on Windows.
 wine_32bit_compiler_options = wine_compiler_options + ['-m32', '-malign-double']
@@ -122,6 +132,13 @@ endif
 
 if with_vst3
   compiler_options += '-DWITH_VST3'
+endif
+
+if with_ara
+  if not with_vst3
+    error('The \'ara\' option requires \'vst3=true\'.')
+  endif
+  compiler_options += '-DWITH_ARA'
 endif
 
 #

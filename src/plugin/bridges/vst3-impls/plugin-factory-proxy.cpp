@@ -16,9 +16,17 @@
 
 #include "plugin-factory-proxy.h"
 
+#include <algorithm>
+#include <cstring>
+
 #include <pluginterfaces/vst/ivstcomponent.h>
 
+#ifdef WITH_ARA
+#include <ARAVST3.h>
+#endif
+
 #include "../vst3.h"
+#include "ara-main-factory-proxy.h"
 #include "plugin-proxy.h"
 
 Vst3PluginFactoryProxyImpl::Vst3PluginFactoryProxyImpl(
@@ -41,9 +49,7 @@ tresult PLUGIN_API
 Vst3PluginFactoryProxyImpl::createInstance(Steinberg::FIDString cid,
                                            Steinberg::FIDString _iid,
                                            void** obj) {
-    // Class IDs may be padded with null bytes
-    constexpr size_t uid_size = sizeof(Steinberg::TUID);
-    if (!cid || !_iid || !obj || strnlen(_iid, uid_size) < uid_size) {
+    if (!cid || !_iid || !obj) {
         return Steinberg::kInvalidArgument;
     }
 
@@ -54,6 +60,59 @@ Vst3PluginFactoryProxyImpl::createInstance(Steinberg::FIDString cid,
     // a `FUID`, so this will have to do
     const Steinberg::FUID requested_iid = Steinberg::FUID::fromTUID(
         *reinterpret_cast<const Steinberg::TUID*>(&*_iid));
+
+#ifdef WITH_ARA
+    // Check if the requested CID maps to a kARAMainFactoryClass entry
+    const auto& class_infos = YaPluginFactory3::arguments_.class_infos_1;
+    const bool is_ara_main_factory =
+        std::any_of(class_infos.begin(), class_infos.end(),
+                    [&](const std::optional<Steinberg::PClassInfo>& info) {
+                        return info &&
+                               std::equal(cid_array,
+                                          cid_array +
+                                              std::extent_v<Steinberg::TUID>,
+                                          info->cid) &&
+                               std::strncmp(info->category,
+                                            kARAMainFactoryClass,
+                                            Steinberg::PClassInfo::kCategorySize) == 0;
+                    });
+
+    if (is_ara_main_factory) {
+        if (requested_iid != ARA::IMainFactory::iid) {
+            bridge_.logger_.log_query_interface(
+                "In IPluginFactory::createInstance() for ARA::IMainFactory",
+                Steinberg::kNoInterface, requested_iid);
+            *obj = nullptr;
+            return Steinberg::kNoInterface;
+        }
+
+        const NativeUID native_cid(cid_array);
+        std::variant<YaAraFactory, UniversalTResult> result =
+            bridge_.send_mutually_recursive_message(
+                YaMainFactory::Construct{.cid = native_cid});
+
+        return std::visit(
+            overload{
+                [&](YaAraFactory&& factory) -> tresult {
+                    bridge_.logger_.log(
+                        "IPluginFactory::createInstance(): created "
+                        "ARA::IMainFactory proxy");
+                    *obj = static_cast<ARA::IMainFactory*>(
+                        new YaMainFactoryImpl(bridge_, std::move(factory)));
+                    return Steinberg::kResultOk;
+                },
+                [&](const UniversalTResult& code) -> tresult {
+                    const tresult result = code;
+                    bridge_.logger_.log(
+                        "WARNING: IPluginFactory::createInstance() for "
+                        "ARA::IMainFactory returned " +
+                        UniversalTResult(result).string());
+                    *obj = nullptr;
+                    return result;
+                }},
+            std::move(result));
+    }
+#endif  // WITH_ARA
 
     Vst3PluginProxy::Construct::Interface requested_interface;
     if (requested_iid == Steinberg::Vst::IComponent::iid) {

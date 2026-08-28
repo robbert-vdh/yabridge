@@ -2,6 +2,7 @@
 
 # The above pattern doesn't match submodules
 /asio
+/ara
 /bitsery
 /clap
 /function2
@@ -10,6 +11,7 @@
 /vst3
 
 # And we obviously don't want to ignore our overlays
+!/packagefiles/ara
 !/packagefiles/asio
 !/packagefiles/bitsery
 !/packagefiles/clap

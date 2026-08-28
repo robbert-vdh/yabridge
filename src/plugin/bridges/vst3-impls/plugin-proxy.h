@@ -17,6 +17,7 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 
 #include "../vst3.h"
 #include "plug-view-proxy.h"
@@ -303,6 +304,21 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     getXmlRepresentationStream(Steinberg::Vst::RepresentationInfo& info /*in*/,
                                Steinberg::IBStream* stream /*out*/) override;
 
+#ifdef WITH_ARA
+    // From `ARA::IPlugInEntryPoint`
+    const ARA::ARAFactory* PLUGIN_API getFactory() override;
+    const ARA::ARAPlugInExtensionInstance* PLUGIN_API
+    bindToDocumentController(
+        ARA::ARADocumentControllerRef documentControllerRef) override;
+
+    // From `ARA::IPlugInEntryPoint2`
+    const ARA::ARAPlugInExtensionInstance* PLUGIN_API
+    bindToDocumentControllerWithRoles(
+        ARA::ARADocumentControllerRef documentControllerRef,
+        ARA::ARAPlugInInstanceRoleFlags knownRoles,
+        ARA::ARAPlugInInstanceRoleFlags assignedRoles) override;
+#endif
+
     /**
      * The component handler the host passed to us during
      * `IEditController::setComponentHandler()`. When the plugin makes a
@@ -406,21 +422,14 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     void maybe_query_parameter_info();
 
-    /**
-     * Clear the bus count and information cache. We need this cache for REAPER
-     * as it makes `num_inputs + num_outputs + 2` function calls to retrieve
-     * this information every single processing cycle. For plugins with a lot of
-     * outputs this really adds up. According to the VST3 workflow diagrams bus
-     * information cannot change anymore once `IAudioProcessor::setProcessing()`
-     * has been called, but REAPER doesn't quite follow the spec here and it
-     * will set bus arrangements and activate the plugin only after it's called
-     * `IAudioProcessor::setProcessing()`. Because of that we'll have to
-     * manually flush this cache when the stores information potentially becomes
-     * invalid.
-     *
-     * @see processing_bus_cache_
-     */
     void clear_bus_cache() noexcept;
+
+#ifdef WITH_ARA
+    const ARA::ARADocumentControllerInstance* create_ara_document_controller(
+        const ARA::ARADocumentControllerHostInstance* hostInstance,
+        const ARA::ARADocumentProperties* properties,
+        native_size_t ara_dc_id);
+#endif
 
     Vst3PluginBridge& bridge_;
 
@@ -568,4 +577,29 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     FunctionResultCache function_result_cache_;
     std::mutex function_result_cache_mutex_;
+
+#ifdef WITH_ARA
+    // ara_factory_c_struct_ contains const char* pointers into ara_factory_cache_
+    // string fields. ara_factory_cache_ must not be destroyed, moved, or
+    // reassigned while ara_factory_c_struct_ is in use.
+    std::optional<YaAraFactory> ara_factory_cache_;
+    ARA::ARAFactory ara_factory_c_struct_{};
+    std::mutex ara_factory_cache_mutex_;
+    std::optional<YaAraPlugInExtensionInstance> ara_extension_cache_;
+    ARA::ARAPlugInExtensionInstance ara_extension_c_struct_{};
+    // Key fields for the cached binding — used to detect re-bind with different args.
+    native_size_t ara_bound_dc_id_ = 0;
+    ARA::ARAInt32 ara_bound_known_roles_ = 0;
+    ARA::ARAInt32 ara_bound_assigned_roles_ = 0;
+
+    // Interface tables for ARA plug-in extension roles. These forward
+    // implemented role methods over IPC and are populated by
+    // bindToDocumentControllerWithRoles. Each table has structSize set to
+    // indicate the fields we implement. Hosts must not call methods we do not
+    // serve; we only advertise roles that the Wine-side plugin actually
+    // supports.
+    ARA::ARAPlaybackRendererInterface ara_playback_renderer_iface_{};
+    ARA::ARAEditorRendererInterface ara_editor_renderer_iface_{};
+    ARA::ARAEditorViewInterface ara_editor_view_iface_{};
+#endif
 };

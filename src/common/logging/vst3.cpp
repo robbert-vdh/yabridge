@@ -1926,3 +1926,690 @@ void Vst3Logger::log_response(bool is_host_plugin,
         }
     });
 }
+
+#ifdef WITH_ARA
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                             const YaPlugInEntryPoint::GetFactory& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": IPlugInEntryPoint::getFactory()";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaPlugInEntryPoint::BindToDocumentControllerWithRoles& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": IPlugInEntryPoint2::bindToDocumentControllerWithRoles("
+                   "ara_dc_id="
+                << request.ara_dc_id << ", knownRoles=0x" << std::hex
+                << request.known_roles << ", assignedRoles=0x"
+                << request.assigned_roles << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                             const YaMainFactory::Construct& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << "IMainFactory::Construct(cid = "
+                << format_uid(Steinberg::FUID::fromTUID(
+                       request.cid.native_uid().data()))
+                << ")";
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_plugin,
+    const std::variant<YaAraFactory, UniversalTResult>& response) {
+    log_response_base(is_host_plugin, [&](auto& message) {
+        std::visit(
+            overload{[&](const YaAraFactory& factory) {
+                         message << "<ARAFactory factoryID=\"" << factory.factoryID
+                                 << "\", analyzeableContentTypes=[";
+                         for (size_t i = 0;
+                              i < factory.analyzeableContentTypes.size(); ++i) {
+                             if (i > 0) message << ",";
+                             message << factory.analyzeableContentTypes[i];
+                         }
+                         message << "], lowestAPI="
+                                 << factory.lowestSupportedApiGeneration
+                                 << ", highestAPI="
+                                 << factory.highestSupportedApiGeneration
+                                 << ">";
+                     },
+                     [&](const UniversalTResult& result) {
+                         message << result.string();
+                     }},
+            response);
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_plugin,
+    const std::variant<YaAraPlugInExtensionInstance, UniversalTResult>&
+        response) {
+    log_response_base(is_host_plugin, [&](auto& message) {
+        std::visit(
+            overload{[&](const YaAraPlugInExtensionInstance& ext) {
+                         message << "ARAPlugInExtensionInstance { playback="
+                                 << (ext.has_playback_renderer ? "true" : "false")
+                                 << ", editorRenderer="
+                                 << (ext.has_editor_renderer ? "true" : "false")
+                                 << ", editorView="
+                                 << (ext.has_editor_view ? "true" : "false")
+                                 << " }";
+                     },
+                     [&](const UniversalTResult& result) {
+                         message << result.string();
+                     }},
+            response);
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::CreateDocumentController& r) {
+    return log_request_base(is_host_plugin, [&](auto& msg) {
+        msg << "YaAra::CreateDocumentController { ara_dc_id=" << r.ara_dc_id
+            << ", name=\"" << r.document_properties.name << "\", factory_id=\""
+            << r.factory_id << "\" }";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::DestroyDocumentController& r) {
+    return log_request_base(is_host_plugin, [&](auto& msg) {
+        msg << "YaAra::DestroyDocumentController { ara_dc_id=" << r.ara_dc_id
+            << " }";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::BeginEditing& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::BeginEditing { ara_dc_id=" << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin, const YaAra::EndEditing& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::EndEditing { ara_dc_id=" << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::NotifyModelUpdates& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::NotifyModelUpdates { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::UpdateDocumentProperties& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::UpdateDocumentProperties { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::AddMusicalContext& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::AddMusicalContext { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::UpdateMusicalContextProperties& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::UpdateMusicalContextProperties { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::UpdateMusicalContextContent& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::UpdateMusicalContextContent { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::RemoveMusicalContext& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::RemoveMusicalContext { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::AddRegionSequence& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::AddRegionSequence { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::UpdateRegionSequenceProperties& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::UpdateRegionSequenceProperties { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::RemoveRegionSequence& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::RemoveRegionSequence { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::AddAudioSource& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::AddAudioSource { ara_dc_id=" << r.ara_dc_id
+                << ", ch=" << r.properties.channel_count
+                << ", rate=" << r.properties.sample_rate
+                << ", samples=" << r.properties.sample_count
+                << ", 64bit=" << r.properties.merits_64bit_samples << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::UpdateAudioSourceProperties& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::UpdateAudioSourceProperties { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::UpdateAudioSourceContent& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::UpdateAudioSourceContent { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::EnableAudioSourceSamplesAccess& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::EnableAudioSourceSamplesAccess { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::DeactivateAndUnregisterAudioSource& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::DeactivateAndUnregisterAudioSource { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::RemoveAudioSource& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::RemoveAudioSource { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::AddAudioModification& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::AddAudioModification { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::CloneAudioModification& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::CloneAudioModification { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::UpdateAudioModificationProperties& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::UpdateAudioModificationProperties { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::DeactivateAndUnregisterAudioModification& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::DeactivateAndUnregisterAudioModification { "
+                   "ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::RemoveAudioModification& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::RemoveAudioModification { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::AddPlaybackRegion& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::AddPlaybackRegion { ara_dc_id=" << r.ara_dc_id
+                << ", modStart=" << r.properties.start_in_modification_time
+                << ", modDur=" << r.properties.duration_in_modification_time
+                << ", pbStart=" << r.properties.start_in_playback_time
+                << ", pbDur=" << r.properties.duration_in_playback_time
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::UpdatePlaybackRegionProperties& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::UpdatePlaybackRegionProperties { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::RemovePlaybackRegion& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::RemovePlaybackRegion { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::RequestAudioSourceContentAnalysis& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::RequestAudioSourceContentAnalysis { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::GetPlaybackRegionHeadAndTailTime& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::GetPlaybackRegionHeadAndTailTime { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::StoreObjectsToArchive& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::StoreObjectsToArchive { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::RestoreObjectsFromArchive& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::RestoreObjectsFromArchive { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                              const YaAra::StoreDocumentToArchive& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::StoreDocumentToArchive { ara_dc_id=" << r.ara_dc_id
+                << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::BeginRestoringDocumentFromArchive& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::BeginRestoringDocumentFromArchive { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::EndRestoringDocumentFromArchive& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::EndRestoringDocumentFromArchive { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::IsAudioSourceContentAvailableDC& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::IsAudioSourceContentAvailableDC { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::GetAudioSourceContentGradeDC& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::GetAudioSourceContentGradeDC { ara_dc_id="
+                << r.ara_dc_id << ", content_type=" << r.content_type << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::CreateAudioSourceContentReaderDC& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::CreateAudioSourceContentReaderDC { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::GetContentReaderEventCountDC& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::GetContentReaderEventCountDC { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::GetContentReaderDataForEventDC& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::GetContentReaderDataForEventDC { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::DestroyContentReaderDC& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::DestroyContentReaderDC { ara_dc_id="
+                << r.ara_dc_id << " }";
+        });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_plugin,
+    const YaAra::GetPlaybackRegionHeadAndTailTime::Response& r) {
+    log_response_base(is_host_plugin, [&](auto& msg) {
+        msg << "{ head=" << r.head_time << ", tail=" << r.tail_time << " }";
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_plugin,
+    const std::variant<uint64_t, UniversalTResult>& response) {
+    log_response_base(is_host_plugin, [&](auto& msg) {
+        std::visit(overload{[&](uint64_t ref) { msg << ref; },
+                            [&](const UniversalTResult& r) { msg << r.string(); }},
+                   response);
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_plugin,
+    const std::variant<int32_t, UniversalTResult>& response) {
+    log_response_base(is_host_plugin, [&](auto& msg) {
+        std::visit(overload{[&](int32_t v) { msg << v; },
+                            [&](const UniversalTResult& r) { msg << r.string(); }},
+                   response);
+    });
+}
+
+// ---------------------------------------------------------------------------
+// ARA HostCallback log_request stubs
+// ReadAudioSamples is suppressed entirely; all others log at all_events.
+// ---------------------------------------------------------------------------
+
+#define ARA_CB_LOG_REQUEST_ALL_EVENTS(Type, text)                             \
+    bool Vst3Logger::log_request(bool is_host_plugin,                         \
+                                 const YaAra::HostCallback::Type& r) {        \
+        return log_request_base(                                               \
+            is_host_plugin, Logger::Verbosity::all_events,                    \
+            [&](auto& msg) { msg << "ARA::HostCallback::" #Type               \
+                                 << " { ara_dc_id=" << r.ara_dc_id            \
+                                 << text << " }"; });                          \
+    }
+
+ARA_CB_LOG_REQUEST_ALL_EVENTS(GetArchiveSize, ", archive_reader_host_ref=" << r.archive_reader_host_ref)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(ReadBytesFromArchive, ", archive_reader_host_ref=" << r.archive_reader_host_ref << ", position=" << r.position << ", length=" << r.length)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(WriteBytesToArchive, ", archive_writer_host_ref=" << r.archive_writer_host_ref << ", position=" << r.position << ", size=" << r.data.size())
+ARA_CB_LOG_REQUEST_ALL_EVENTS(NotifyDocumentArchivingProgress, ", value=" << r.value)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(NotifyDocumentUnarchivingProgress, ", value=" << r.value)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(GetDocumentArchiveID, ", archive_reader_host_ref=" << r.archive_reader_host_ref)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(IsMusicalContextContentAvailable, ", musical_context_host_ref=" << r.musical_context_host_ref << ", content_type=" << r.content_type)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(GetMusicalContextContentGrade, ", musical_context_host_ref=" << r.musical_context_host_ref << ", content_type=" << r.content_type)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(CreateMusicalContextContentReader, ", musical_context_host_ref=" << r.musical_context_host_ref << ", content_type=" << r.content_type)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(IsAudioSourceContentAvailable, ", audio_source_host_ref=" << r.audio_source_host_ref << ", content_type=" << r.content_type)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(GetAudioSourceContentGrade, ", audio_source_host_ref=" << r.audio_source_host_ref << ", content_type=" << r.content_type)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(CreateAudioSourceContentReader, ", audio_source_host_ref=" << r.audio_source_host_ref << ", content_type=" << r.content_type)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(GetContentReaderEventCount, ", content_reader_host_ref=" << r.content_reader_host_ref)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(GetContentReaderDataForEvent, ", content_reader_host_ref=" << r.content_reader_host_ref << ", event_index=" << r.event_index << ", content_type=" << r.content_type)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(DestroyContentReader, ", content_reader_host_ref=" << r.content_reader_host_ref)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(NotifyAudioSourceAnalysisProgress, ", audio_source_host_ref=" << r.audio_source_host_ref << ", state=" << r.state << ", value=" << r.value)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(NotifyAudioSourceContentChanged, ", audio_source_host_ref=" << r.audio_source_host_ref)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(NotifyAudioModificationContentChanged, ", audio_modification_host_ref=" << r.audio_modification_host_ref)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(NotifyPlaybackRegionContentChanged, ", playback_region_host_ref=" << r.playback_region_host_ref)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(NotifyDocumentDataChanged, "")
+ARA_CB_LOG_REQUEST_ALL_EVENTS(RequestStartPlayback, "")
+ARA_CB_LOG_REQUEST_ALL_EVENTS(RequestStopPlayback, "")
+ARA_CB_LOG_REQUEST_ALL_EVENTS(RequestSetPlaybackPosition, ", time_position=" << r.time_position)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(RequestSetCycleRange, ", start_time=" << r.start_time << ", duration=" << r.duration)
+ARA_CB_LOG_REQUEST_ALL_EVENTS(RequestEnableCycle, ", enable=" << r.enable)
+
+#undef ARA_CB_LOG_REQUEST_ALL_EVENTS
+
+void Vst3Logger::log_response(bool is_host_plugin,
+                               const YaAra::HostCallback::HandleResponse& v) {
+    log_response_base(is_host_plugin,
+                      [&](auto& msg) { msg << v.value; });
+}
+
+void Vst3Logger::log_response(bool is_host_plugin,
+                               const YaAra::HostCallback::Int32Response& v) {
+    log_response_base(is_host_plugin,
+                      [&](auto& msg) { msg << v.value; });
+}
+
+void Vst3Logger::log_response(bool is_host_plugin,
+                               const YaAra::HostCallback::BytesResponse& v) {
+    log_response_base(is_host_plugin,
+                      [&](auto& msg) { msg << v.data.size() << " bytes"; });
+}
+
+void Vst3Logger::log_response(bool is_host_plugin,
+                               const YaAra::HostCallback::StringResponse& v) {
+    log_response_base(is_host_plugin,
+                      [&](auto& msg) { msg << "\"" << v.value << "\""; });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                               const YaAra::CreateAudioReader& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::CreateAudioReader { ara_dc_id=" << r.ara_dc_id
+                << ", src=" << r.audio_source_host_ref
+                << ", 64bit=" << r.use_64bit << " }";
+        });
+}
+
+bool Vst3Logger::log_request(bool /*is_host_plugin*/,
+                               const YaAra::DestroyAudioReader& /*r*/) {
+    return false;
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                               const YaAra::ReadAudioSamples& r) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& msg) {
+            msg << "YaAra::ReadAudioSamples { reader=" << r.audio_reader_host_ref
+                << ", pos=" << r.sample_position
+                << ", count=" << r.sample_count << " }";
+        });
+}
+
+void Vst3Logger::log_response(bool is_host_plugin,
+                               const YaAra::CreateAudioReader::Response& v) {
+    log_response_base(is_host_plugin, [&](auto& msg) {
+        const int channels = v.shm_config.input_offsets.empty()
+                                 ? 0
+                                 : static_cast<int>(
+                                       v.shm_config.input_offsets[0].size());
+        msg << "reader_id=" << v.reader_id << " shm=\"" << v.shm_config.name
+            << "\" size=" << v.shm_config.size << " channels=" << channels;
+    });
+}
+
+void Vst3Logger::log_response(bool is_host_plugin,
+                               const YaAra::ReadAudioSamples::Response& v) {
+    log_response_base(is_host_plugin, [&](auto& msg) {
+        msg << (v.success ? "ok" : "FAILED");
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::PluginExtension::PlaybackRendererAddRegion& r) {
+    return log_request_base(is_host_plugin, Logger::Verbosity::all_events,
+                            [&](auto& msg) {
+        msg << r.instance_id
+            << ": ARAPlaybackRendererInterface::addPlaybackRegion(region="
+            << r.playback_region_ref << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::PluginExtension::PlaybackRendererRemoveRegion& r) {
+    return log_request_base(is_host_plugin, Logger::Verbosity::all_events,
+                            [&](auto& msg) {
+        msg << r.instance_id
+            << ": ARAPlaybackRendererInterface::removePlaybackRegion(region="
+            << r.playback_region_ref << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::PluginExtension::EditorRendererAddRegion& r) {
+    return log_request_base(is_host_plugin, Logger::Verbosity::all_events,
+                            [&](auto& msg) {
+        msg << r.instance_id
+            << ": ARAEditorRendererInterface::addPlaybackRegion(region="
+            << r.playback_region_ref << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::PluginExtension::EditorRendererRemoveRegion& r) {
+    return log_request_base(is_host_plugin, Logger::Verbosity::all_events,
+                            [&](auto& msg) {
+        msg << r.instance_id
+            << ": ARAEditorRendererInterface::removePlaybackRegion(region="
+            << r.playback_region_ref << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::PluginExtension::EditorRendererAddRegionSequence& r) {
+    return log_request_base(is_host_plugin, Logger::Verbosity::all_events,
+                            [&](auto& msg) {
+        msg << r.instance_id
+            << ": ARAEditorRendererInterface::addRegionSequence(seq="
+            << r.region_sequence_ref << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::PluginExtension::EditorRendererRemoveRegionSequence& r) {
+    return log_request_base(is_host_plugin, Logger::Verbosity::all_events,
+                            [&](auto& msg) {
+        msg << r.instance_id
+            << ": ARAEditorRendererInterface::removeRegionSequence(seq="
+            << r.region_sequence_ref << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::PluginExtension::EditorViewNotifySelection& r) {
+    return log_request_base(is_host_plugin, Logger::Verbosity::all_events,
+                            [&](auto& msg) {
+        msg << r.instance_id
+            << ": ARAEditorViewInterface::notifySelection(regions="
+            << r.playback_region_refs.size()
+            << ", seqs=" << r.region_sequence_refs.size() << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaAra::PluginExtension::EditorViewNotifyHideRegionSequences& r) {
+    return log_request_base(is_host_plugin, Logger::Verbosity::all_events,
+                            [&](auto& msg) {
+        msg << r.instance_id
+            << ": ARAEditorViewInterface::notifyHideRegionSequences(seqs="
+            << r.region_sequence_refs.size() << ")";
+    });
+}
+
+#endif  // WITH_ARA
