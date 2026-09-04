@@ -742,6 +742,21 @@ negative side effects:
   `preempt=full` kernel parameter or better yet, switch to a kernel that's
   optimized for low latencies.
 
+- If your setup treats realtime priority as a scheduling or CPU placement signal
+  — for instance a helper that keeps only threads above a certain `rtprio` on
+  your fastest cores — then you may want to set the
+  `YABRIDGE_FALLBACK_RT_PRIORITY` environment variable. yabridge creates its
+  audio threads with a `SCHED_FIFO` priority of 5 and then periodically copies
+  the priority the host uses on its own audio threads, but everything that runs
+  on those threads before the first process call still runs at that initial
+  priority. For some plugins that includes an expensive activation. Setting this
+  variable to a value above your own threshold makes that initial priority match
+  what the thread will end up at anyway. The value is clamped to the valid
+  `SCHED_FIFO` range and to your `rtprio` limit, and it defaults to 5. See the
+  [environment configuration](#environment-configuration) section below for more
+  information on where to set this environment variable so that it gets picked
+  up when you start your DAW.
+
 - You can also try enabling the `threadirqs` kernel parameter and using which
   can in some situations help with xruns. After enabling this, you can use
   [rtirq](https://github.com/rncbc/rtirq#rtirq) to increase the priority of
