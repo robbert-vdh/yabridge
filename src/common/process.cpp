@@ -246,6 +246,31 @@ std::optional<int> Process::Handle::wait() const noexcept {
     }
 }
 
+/**
+ * Add a working directory change to a `posix_spawn_file_actions_t`. If glibc is
+ * too old to support this then the spawned process will just inherit our
+ * working directory, which is what it would have done before.
+ */
+static void add_start_dir_action(posix_spawn_file_actions_t& actions,
+                                 const fs::path& start_dir) {
+#if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 29)
+    posix_spawn_file_actions_addchdir_np(&actions, start_dir.c_str());
+#else
+    // NOTE: This is looked up at runtime for the same reason as
+    //       `posix_spawn_file_actions_addclosefrom_np()` below, namely so that
+    //       yabridge can still be compiled on older distros
+    int (*posix_spawn_file_actions_addchdir_np)(posix_spawn_file_actions_t*,
+                                                const char*);
+    posix_spawn_file_actions_addchdir_np =
+        reinterpret_cast<decltype(posix_spawn_file_actions_addchdir_np)>(
+            dlsym(nullptr, "posix_spawn_file_actions_addchdir_np"));
+
+    if (posix_spawn_file_actions_addchdir_np) {
+        posix_spawn_file_actions_addchdir_np(&actions, start_dir.c_str());
+    }
+#endif
+}
+
 Process::Process(std::string command) : command_(command) {}
 
 Process::StringResult Process::spawn_get_stdout_line() const {
@@ -265,6 +290,9 @@ Process::StringResult Process::spawn_get_stdout_line() const {
                                      O_WRONLY | O_APPEND, 0);
     posix_spawn_file_actions_addclose(&actions, stdout_pipe_fds[0]);
     posix_spawn_file_actions_addclose(&actions, stdout_pipe_fds[1]);
+    if (start_dir_) {
+        add_start_dir_action(actions, *start_dir_);
+    }
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
@@ -306,9 +334,17 @@ Process::StatusResult Process::spawn_get_status() const {
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
 
+    // We only need file actions if we have to change the working directory
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    if (start_dir_) {
+        add_start_dir_action(actions, *start_dir_);
+    }
+
     pid_t child_pid = 0;
-    const auto result = posix_spawnp(&child_pid, command_.c_str(), nullptr,
-                                     nullptr, argv, envp);
+    const auto result =
+        posix_spawnp(&child_pid, command_.c_str(),
+                     start_dir_ ? &actions : nullptr, nullptr, argv, envp);
     if (result == 2) {
         return Process::CommandNotFound{};
     } else if (result != 0) {
@@ -392,6 +428,9 @@ Process::HandleResult Process::spawn_child_piped(
                                      STDERR_FILENO);
     // We'll close the four pipe fds along with the rest of the file descriptors
     close_non_stdio_file_descriptors(actions);
+    if (start_dir_) {
+        add_start_dir_action(actions, *start_dir_);
+    }
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
@@ -438,6 +477,9 @@ Process::HandleResult Process::spawn_child_redirected(
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, filename.c_str(),
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
     close_non_stdio_file_descriptors(actions);
+    if (start_dir_) {
+        add_start_dir_action(actions, *start_dir_);
+    }
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,

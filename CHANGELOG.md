@@ -10,6 +10,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- The Wine plugin host now starts in the Wine prefix's `drive_c` directory
+  instead of inheriting the host's working directory. That directory is usually
+  not part of the Wine prefix, in which case Wine maps it to `Z:\`. Since that
+  drive's root is the Linux filesystem root it is not writable, so plugins that
+  create files relative to the root of the current drive would fail in ways that
+  look like a crash. This caused **Kontakt 7** and **Komplete Kontrol** to take
+  down the plugin host while an instance was being created.
 - Fixed a compatibility issue with **Wine 9.22** and above that caused mouse
   clicks in plugin GUIs to not register properly. A massive thanks to
   [@rbernon](https://github.com/rbernon),

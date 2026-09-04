@@ -233,6 +233,16 @@ class Process {
     }
 
     /**
+     * Start the process in this directory instead of inheriting our own working
+     * directory. The directory has to exist, since the process would otherwise
+     * fail to spawn at all.
+     */
+    inline Process& start_dir(ghc::filesystem::path dir) {
+        start_dir_ = std::move(dir);
+        return *this;
+    }
+
+    /**
      * Spawn the process, leave STDIN, redirect STDERR to `/dev/null`, and
      * return the first line (without the trailing linefeed) of STDOUT. The
      * first output line will still be returned even if the process exits with a
@@ -280,6 +290,7 @@ class Process {
     std::string command_;
     std::vector<std::string> args_;
     std::optional<ProcessEnvironment> env_;
+    std::optional<ghc::filesystem::path> start_dir_;
 
     mutable std::vector<char const*> argv_;
 };

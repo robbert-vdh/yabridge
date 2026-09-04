@@ -57,6 +57,19 @@ Process::Handle HostProcess::launch_host(
     }
 
     child.environment(plugin_info.create_host_env());
+
+    // NOTE: Without this the Wine host inherits our working directory. That
+    //       directory is usually not part of the Wine prefix, so Wine maps it
+    //       to `Z:\`, which is the Linux filesystem root and thus not writable.
+    //       Plugins that create files relative to the root of the current drive
+    //       then fail in ways that look like a crash. The libzmq version
+    //       bundled with Kontakt 7 and Komplete Kontrol aborts the process this
+    //       way when it sets up its internal socket pair.
+    const fs::path drive_c = plugin_info.normalize_wine_prefix() / "drive_c";
+    if (fs::is_directory(drive_c)) {
+        child.start_dir(drive_c);
+    }
+
     Process::Handle child_handle = std::visit(
         overload{
             [](Process::Handle handle) -> Process::Handle { return handle; },
