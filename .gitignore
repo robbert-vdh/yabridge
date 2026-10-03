@@ -1,1 +1,7 @@
 /build*/
+
+# Nix
+/.direnv/
+result
+result-*
+flake.lock
