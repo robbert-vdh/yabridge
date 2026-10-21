@@ -49,6 +49,7 @@ using namespace std::literals::string_literals;
  * menu).
  */
 constexpr size_t idle_timer_id = 1337;
+constexpr size_t repaint_timer_id = 1338;
 
 /**
  * The X11 event mask for the host window, which in most DAWs except for Ardour
@@ -692,7 +693,25 @@ void Editor::handle_x11_events() noexcept {
                         x11_connection_.get(), XCB_PROP_MODE_REPLACE,
                         wine_window_, xcb_wm_state_property_,
                         xcb_wm_state_property_, 32, 2, values.data());
+
                     xcb_flush(x11_connection_.get());
+
+                    // Force the plugin's child windows to repaint. Under KWin
+                    // compositor, X11 Expose events are not generated for newly
+                    // mapped embedded windows, so the plugin never gets WM_PAINT
+                    // via the X11 path. RDW_ALLCHILDREN propagates the
+                    // invalidation to all plugin HWNDs; WM_PAINT will be
+                    // dispatched on the next message pump cycle.
+                    RedrawWindow(win32_window_.handle_, nullptr, nullptr,
+                                 RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+                    // Wine's MapNotify/ConfigureNotify/WM_STATE processing fires
+                    // on the next message loop iteration and sends
+                    // WM_ERASEBKGND, wiping the painted content. Schedule a
+                    // deferred repaint to fire after Wine finishes that
+                    // processing (~16ms per tick, 150ms gives ~9 ticks of
+                    // headroom).
+                    SetTimer(win32_window_.handle_, repaint_timer_id, 150,
+                             nullptr);
                 } break;
                 // We want to grab keyboard input focus when the user hovers
                 // over our embedded Wine window AND that window is a child of
@@ -1186,7 +1205,18 @@ LRESULT CALLBACK window_proc(HWND handle,
         case WM_TIMER: {
             auto editor = reinterpret_cast<Editor*>(
                 GetWindowLongPtr(handle, GWLP_USERDATA));
-            if (!editor || wParam != idle_timer_id) {
+            if (!editor) {
+                break;
+            }
+
+            if (wParam == repaint_timer_id) {
+                KillTimer(handle, repaint_timer_id);
+                RedrawWindow(handle, nullptr, nullptr,
+                             RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+                return 0;
+            }
+
+            if (wParam != idle_timer_id) {
                 break;
             }
 
