@@ -609,6 +609,38 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
                                            std::nullopt);
                 return -1;
             }
+
+            // Remember whether the plugin implements PreSonus' gain reduction
+            // API, so the per-block query below can be answered locally
+            if (query == "supportsGainReductionInfo") {
+                const intptr_t result =
+                    sockets_.host_plugin_dispatch_.send_event(
+                        converter, std::pair<Vst2Logger&, bool>(logger_, true),
+                        opcode, index, value, data, option);
+                gain_reduction_support_ = result == 1
+                                              ? GainReductionSupport::yes
+                                              : GainReductionSupport::no;
+                return result;
+            }
+        } break;
+        case effVendorSpecific: {
+            // HACK: REAPER asks for the gain reduction ('PreS', 'GRdB') from
+            //       its audio thread on every processing cycle, even for
+            //       plugins that don't support it. Passing that through means
+            //       the audio thread waits for the Wine GUI thread, which
+            //       causes dropouts whenever the plugin's GUI is busy. This is
+            //       only answered locally if the host already asked the plugin
+            //       and it said it doesn't support the API.
+            constexpr intptr_t presonus_id = 0x50726553;        // 'PreS'
+            constexpr intptr_t gain_reduction_id = 0x47526442;  // 'GRdB'
+            if (index == presonus_id && value == gain_reduction_id &&
+                gain_reduction_support_ == GainReductionSupport::no) {
+                logger_.log_event(true, opcode, index, value, nullptr, option,
+                                  std::nullopt);
+                logger_.log_event_response(true, opcode, 0, nullptr,
+                                           std::nullopt);
+                return 0;
+            }
         } break;
     }
 
