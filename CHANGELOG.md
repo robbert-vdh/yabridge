@@ -28,6 +28,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   sides of the screen.
 - Similarly, popups should no longer spuriously appear in the wrong placeo n
   screen. This mostly affected _MeldaProduction_ plugin
+- Fixed yabridge aborting the host when the host ignores `SIGCHLD`, like
+  _Element_ does. In that case child processes are reaped automatically and
+  `waitpid()` fails with `ECHILD`, which yabridge used to treat as a fatal
+  error.
 
 ### Removed
 

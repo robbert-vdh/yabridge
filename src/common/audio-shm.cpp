@@ -79,7 +79,9 @@ void AudioShmBuffer::setup_mapping() {
     // `ftruncate()` with a size of 0 on shared memory
     if (config_.size > 0) {
         // I don't think this can fail
-        assert(ftruncate(shm_fd_, config_.size) == 0);
+        [[maybe_unused]] const int truncate_result =
+            ftruncate(shm_fd_, config_.size);
+        assert(truncate_result == 0);
 
         // But this can, if the user does not have permissions to use (enough)
         // locked emmory, we'll try it without locking memory and show a big
@@ -104,7 +106,9 @@ void AudioShmBuffer::setup_mapping() {
             // Growing into a size that we cannot lock sounds like a super rare
             // edge case, but let's handle it anyways
             if (old_shm_bytes) {
-                assert(munmap(old_shm_bytes, shm_size_) == 0);
+                [[maybe_unused]] const int unmap_result =
+                    munmap(old_shm_bytes, shm_size_);
+                assert(unmap_result == 0);
             }
             shm_bytes_ = static_cast<uint8_t*>(mmap(nullptr, config_.size,
                                                     PROT_READ | PROT_WRITE,
