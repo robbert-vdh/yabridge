@@ -386,6 +386,18 @@ class Editor {
     fu2::unique_function<void()> idle_timer_proc_;
 
     /**
+     * The number of extra full repaints to request from the plugin, performed
+     * one per idle timer tick. Some plugins (FabFilter) paint their editor
+     * exactly once, before they know the final window size and content scale,
+     * and then never repaint on their own. The part of the window that was not
+     * painted stays black until the user moves the mouse over it. Asking for a
+     * repaint right after `show()` and `resize()` fixes that.
+     *
+     * @see pending_redraws_
+     */
+    unsigned int pending_redraws_ = 0;
+
+    /**
      * The atom corresponding to `WM_STATE`.
      */
     xcb_atom_t xcb_wm_state_property_;
