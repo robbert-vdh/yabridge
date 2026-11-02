@@ -16,18 +16,32 @@
 
 #pragma once
 
+#include <atomic>
 #include <iostream>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <shared_mutex>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <public.sdk/source/vst/hosting/module.h>
+
+#ifdef WITH_ARA
+#include "../ara-wine-abi.h"
+#include <ARAVST3.h>
+#endif
 
 #include "../../common/communication/vst3.h"
 #include "../../common/configuration.h"
 #include "../../common/mutual-recursion.h"
 #include "../editor.h"
 #include "common.h"
+
+#ifdef WITH_ARA
+#include "vst3-impls/ara-host-callback-proxies.h"
+#endif
 
 // Forward declarations
 class Vst3ContextMenuProxyImpl;
@@ -94,6 +108,11 @@ struct Vst3PluginInterfaces {
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unit_info;
     Steinberg::FUnknownPtr<Steinberg::Vst::IXmlRepresentationController>
         xml_representation_controller;
+
+#ifdef WITH_ARA
+    Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint> plug_in_entry_point;
+    Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint2> plug_in_entry_point_2;
+#endif
 };
 
 /**
@@ -264,6 +283,20 @@ struct Vst3PluginInstance {
      * infinite loop trying to adjust the size to a specific target.
      */
     Steinberg::ViewRect last_set_size;
+
+#ifdef WITH_ARA
+    // The ARAPlugInExtensionInstance returned by bindToDocumentControllerWithRoles.
+    // Written on the GUI thread (via run_in_context), read on the IPC dispatch
+    // thread from EditorViewNotifySelection. Must be atomic to avoid a data race.
+    std::atomic<const ARA::ARAPlugInExtensionInstance*> ara_extension_instance{nullptr};
+
+    // The last notifySelection call received for this instance. Replayed after
+    // attached() so Melodyne's view gets the selection state after its window
+    // exists.
+    std::mutex last_ara_selection_mutex;
+    std::optional<YaAra::PluginExtension::EditorViewNotifySelection>
+        last_ara_selection;
+#endif
 };
 
 /**
@@ -520,7 +553,7 @@ class Vst3Bridge : public HostBridge {
      *
      * @related generate_instance_id
      */
-    std::atomic_size_t current_instance_id_;
+    std::atomic_size_t current_instance_id_ = 1;
 
     /**
      * The host context proxy object if we got passed a host context during a
@@ -579,4 +612,16 @@ class Vst3Bridge : public HostBridge {
      *       `IComponentHandler::performEdit()` wasn't called from there.
      */
     MutualRecursionHelper<Win32Thread> audio_thread_mutual_recursion_;
+
+#ifdef WITH_ARA
+    std::unordered_map<native_size_t, std::unique_ptr<AraDocumentControllerInstance>>
+        ara_document_controllers_;
+    std::mutex ara_document_controllers_mutex_;
+    // Tracks which ARAFactory pointers have already had initializeARAWithConfiguration called.
+    std::unordered_set<std::string> ara_initialized_factories_;
+    // Keeps IMainFactory instances alive so their ARAFactory* pointers remain
+    // valid. Keyed by factory_id string.
+    std::unordered_map<std::string, Steinberg::IPtr<ARA::IMainFactory>>
+        ara_main_factories_;
+#endif
 };
