@@ -83,13 +83,18 @@ bool clap_entry_init(const char* /*plugin_path*/) {
         //      just use instead. Should we? The advantage of doing it this way
         //      instead is that we'll have consistent behavior between all
         //      plugin formats.
-        const fs::path plugin_path = get_this_file_location();
+        fs::path plugin_path;
         try {
+            plugin_path = get_this_file_location();
             bridge = std::make_unique<ClapPluginBridge>(plugin_path);
 
             return true;
         } catch (const std::exception& error) {
             log_init_error(error, plugin_path);
+
+            // Otherwise the next `clap_entry_init()` call would report success
+            // without a bridge
+            active_instances.fetch_sub(1, std::memory_order_seq_cst);
 
             return false;
         }
@@ -109,10 +114,17 @@ void clap_entry_deinit() {
 }
 
 const void* clap_entry_get_factory(const char* factory_id) {
-    assert(bridge);
     assert(factory_id);
+    if (!bridge) {
+        return nullptr;
+    }
 
-    return bridge->get_factory(factory_id);
+    // Nothing may be thrown from a C entry point
+    try {
+        return bridge->get_factory(factory_id);
+    } catch (const std::exception&) {
+        return nullptr;
+    }
 }
 
 // This visibility attribute doesn't do anything on data with external linkage,

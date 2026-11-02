@@ -50,7 +50,7 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
         /**
          * Whether the object supported this interface.
          */
-        bool supported;
+        bool supported = false;
 
         /**
          * The context menu items prepopulated by the host so the plugin can

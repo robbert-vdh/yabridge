@@ -107,7 +107,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
         /**
          * The unique identifier for this specific object instance.
          */
-        native_size_t instance_id;
+        native_size_t instance_id = 0;
 
         YaAudioPresentationLatency::ConstructArgs
             audio_presentation_latency_args;

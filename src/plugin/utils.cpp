@@ -16,6 +16,7 @@
 
 #include "utils.h"
 
+#include <pwd.h>
 #include <unistd.h>
 #include <sstream>
 
@@ -91,7 +92,11 @@ ghc::filesystem::path PluginInfo::normalize_wine_prefix() const {
             [](const DefaultWinePrefix&) {
                 // NOLINTNEXTLINE(concurrency-mt-unsafe)
                 const char* home_dir = getenv("HOME");
-                assert(home_dir);
+                if (!home_dir) {
+                    // Wine falls back to the passwd entry as well
+                    const passwd* user = getpwuid(getuid());
+                    home_dir = user ? user->pw_dir : "/";
+                }
 
                 return fs::path(home_dir) / ".wine";
             },
@@ -323,9 +328,15 @@ std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
 }
 
 bool equals_case_insensitive(const std::string& a, const std::string& b) {
-    return std::equal(a.begin(), a.end(), b.begin(),
+    // `std::tolower()` is undefined for negative values other than `EOF`, which
+    // is what bytes from UTF-8 sequences are as a `char`
+    return a.size() == b.size() &&
+           std::equal(a.begin(), a.end(), b.begin(),
                       [](const char& a_char, const char& b_char) {
-                          return std::tolower(a_char) == std::tolower(b_char);
+                          return std::tolower(
+                                     static_cast<unsigned char>(a_char)) ==
+                                 std::tolower(
+                                     static_cast<unsigned char>(b_char));
                       });
 }
 

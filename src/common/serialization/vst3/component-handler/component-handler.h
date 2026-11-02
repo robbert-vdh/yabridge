@@ -45,7 +45,7 @@ class YaComponentHandler : public Steinberg::Vst::IComponentHandler {
         /**
          * Whether the object supported this interface.
          */
-        bool supported;
+        bool supported = false;
 
         template <typename S>
         void serialize(S& s) {

@@ -465,7 +465,7 @@ class Vst3Bridge : public HostBridge {
      * the lock handle.
      */
     std::pair<Vst3PluginInstance&, std::shared_lock<std::shared_mutex>>
-    get_instance(size_t instance_id) noexcept;
+    get_instance(size_t instance_id);
 
     /**
      * Sets up the shared memory audio buffers for a plugin instance plugin

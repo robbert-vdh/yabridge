@@ -235,3 +235,11 @@ inline ClapAudioThreadControlRequest::Payload& get_request_variant(
     ClapAudioThreadControlRequest& request) noexcept {
     return request.payload;
 }
+
+// A default process response contains null output pointers and cannot be
+// serialized.
+template <>
+struct is_safe_default_response<MessageReference<clap::plugin::Process>>
+    : std::false_type {};
+template <>
+struct is_safe_default_response<clap::plugin::Process> : std::false_type {};

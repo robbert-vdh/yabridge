@@ -178,7 +178,8 @@ class Process {
         void detach() noexcept;
 
         /**
-         * Forcefully terminate the process by sending `SIGKILL`. Will reap the
+         * Terminate the process by sending `SIGINT` (see
+         * `IndividualHost::terminate()` for why not `SIGKILL`). Will reap the
          * process zombie after sending the signal.
          */
         void terminate() const noexcept;
@@ -197,6 +198,15 @@ class Process {
         bool detached_ = false;
 
         pid_t pid_ = 0;
+
+        /**
+         * A pidfd for the process, or -1 if the kernel doesn't support them
+         * (Linux 5.3+). A host that ignores `SIGCHLD` reaps our children
+         * automatically, after which `pid_` may be reused by an unrelated
+         * process. Signalling and waiting through the pidfd can never reach
+         * that other process.
+         */
+        int pidfd_ = -1;
     };
 
     using StringResult =
@@ -250,8 +260,8 @@ class Process {
 
 #ifndef WITHOUT_ASIO
     /**
-     * Spawn the process without waiting for its completion, leave STDIN alone,
-     * create pipes for STDOUT and STDERR, and assign those to the provided
+     * Spawn the process without waiting for its completion, redirect STDIN to
+     * `/dev/null`, create pipes for STDOUT and STDERR, and assign those to the provided
      * (empty) stream descriptors. Use `posix_spawn()`, closes all non-STDIO
      * file descriptors. The process will be terminated when the child process
      * handle gets dropped.
@@ -262,8 +272,8 @@ class Process {
 #endif  // WITHOUT_ASIO
 
     /**
-     * Spawn the process without waiting for its completion, leave STDIN alone,
-     * and redirect STDOUT and STDERR to a file. Use `posix_spawn()`, closes all
+     * Spawn the process without waiting for its completion, redirect STDIN to
+     * `/dev/null`, and redirect STDOUT and STDERR to a file. Use `posix_spawn()`, closes all
      * non-STDIO file descriptors. The process will be terminated when the child
      * process handle gets dropped.
      */

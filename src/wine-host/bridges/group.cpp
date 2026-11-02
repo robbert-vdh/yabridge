@@ -117,7 +117,9 @@ GroupBridge::~GroupBridge() noexcept {
     // Our fancy `Vst2Sockets` and `Vst3Sockets` clean up after themselves, but
     // here we need to do it manually
     // TODO: Encapsulate this, destructors are evil
-    fs::remove(group_socket_endpoint_.path());
+    // This destructor is `noexcept`, so this must not throw
+    std::error_code err;
+    fs::remove(group_socket_endpoint_.path(), err);
 
     stdio_context_.stop();
 }
@@ -189,6 +191,9 @@ void GroupBridge::accept_requests() {
                 logger_.log(error.message());
 
                 main_context_.stop();
+
+                // The socket is not connected, so there's nothing to read
+                return;
             }
 
             // Read the parameters, and then host the plugin in this process

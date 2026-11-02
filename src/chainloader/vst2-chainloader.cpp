@@ -72,17 +72,20 @@ bool initialize_library() {
         return true;
     }
 
-    library_handle = find_plugin_library(yabridge_vst2_plugin_name);
-    if (!library_handle) {
+    // The handle is only stored once every function has been found. Otherwise
+    // a later call would report success with some of them still null.
+    void* handle = find_plugin_library(yabridge_vst2_plugin_name);
+    if (!handle) {
         return false;
     }
 
 #define LOAD_FUNCTION(name)                                                 \
     do {                                                                    \
         (name) =                                                            \
-            reinterpret_cast<decltype(name)>(dlsym(library_handle, #name)); \
+            reinterpret_cast<decltype(name)>(dlsym(handle, #name));         \
         if (!(name)) {                                                      \
             log_failing_dlsym(yabridge_vst2_plugin_name, #name);            \
+            dlclose(handle);                                                \
             return false;                                                   \
         }                                                                   \
     } while (false)
@@ -93,9 +96,11 @@ bool initialize_library() {
     // yabridge version
     remote_yabridge_version =
         reinterpret_cast<decltype(remote_yabridge_version)>(
-            dlsym(library_handle, "yabridge_version"));
+            dlsym(handle, "yabridge_version"));
 
 #undef LOAD_FUNCTION
+
+    library_handle = handle;
 
     return true;
 }
@@ -104,12 +109,17 @@ extern "C" YABRIDGE_EXPORT AEffect* VSTPluginMain(
     audioMasterCallback host_callback) {
     assert(host_callback);
 
-    if (!initialize_library()) {
+    try {
+        if (!initialize_library()) {
+            return nullptr;
+        }
+
+        const fs::path this_plugin_path = get_this_file_location();
+        return yabridge_plugin_init(host_callback, this_plugin_path.c_str());
+    } catch (...) {
+        // This is a C entry point, so an exception must not escape here.
         return nullptr;
     }
-
-    const fs::path this_plugin_path = get_this_file_location();
-    return yabridge_plugin_init(host_callback, this_plugin_path.c_str());
 }
 
 // XXX: GCC doens't seem to have a clean way to let you define an arbitrary
@@ -128,9 +138,13 @@ YABRIDGE_EXPORT AEffect* deprecated_main(audioMasterCallback audioMaster) {
  * rebuilt on every git commit in development.
  */
 extern "C" YABRIDGE_EXPORT const char* yabridge_version() {
-    if (!initialize_library() || !remote_yabridge_version) {
+    try {
+        if (!initialize_library() || !remote_yabridge_version) {
+            return nullptr;
+        }
+
+        return remote_yabridge_version();
+    } catch (...) {
         return nullptr;
     }
-
-    return remote_yabridge_version();
 }

@@ -70,7 +70,7 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
         /**
          * For `IPluginFactory::countClasses`.
          */
-        int num_classes;
+        int num_classes = 0;
 
         /**
          * For `IPluginFactory::getClassInfo`. We need to store all four class

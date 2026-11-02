@@ -115,10 +115,12 @@ class WineXdndProxy {
         ~Handle() noexcept;
 
         Handle(const Handle&) noexcept;
-        Handle& operator=(const Handle&) noexcept = default;
+        // Assignment would have to adjust the reference count as well, and
+        // nothing needs it
+        Handle& operator=(const Handle&) = delete;
 
         Handle(Handle&&) noexcept;
-        Handle& operator=(Handle&&) noexcept = default;
+        Handle& operator=(Handle&&) = delete;
 
        private:
         WineXdndProxy* proxy_;

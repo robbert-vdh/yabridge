@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <map>
 
 #include "../vst3.h"
@@ -339,8 +340,12 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * XXX: This approach of course won't work with multiple views, but the SDK
      *      currently only defines a single type of view so that shouldn't be an
      *      issue
+     *
+     * The view resets this to a null pointer when it gets destroyed, so
+     * callbacks that arrive after the editor was closed don't touch freed
+     * memory.
      */
-    Vst3PlugViewProxyImpl* last_created_plug_view_ = nullptr;
+    std::atomic<Vst3PlugViewProxyImpl*> last_created_plug_view_ = nullptr;
 
     /**
      * A pointer to a context menu returned by the host as a response to a call

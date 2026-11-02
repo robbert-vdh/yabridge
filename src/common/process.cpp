@@ -17,11 +17,19 @@
 #include "process.h"
 
 #include <cassert>
+#include <cerrno>
 #include <iostream>
 
 #include <dlfcn.h>
 #include <spawn.h>
+#include <poll.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
+#include <unistd.h>
+
+#ifndef P_PIDFD
+#define P_PIDFD 3
+#endif
 
 namespace fs = ghc::filesystem;
 
@@ -193,25 +201,55 @@ char* const* ProcessEnvironment::make_environ() const {
     return const_cast<char* const*>(recreated_environ_.data());
 }
 
-Process::Handle::Handle(pid_t pid) : pid_(pid) {}
+/**
+ * `waitpid()`, retried when it gets interrupted by a signal.
+ */
+static pid_t waitpid_retry(pid_t pid, int* status) noexcept {
+    pid_t result;
+    do {
+        result = waitpid(pid, status, 0);
+    } while (result < 0 && errno == EINTR);
+
+    return result;
+}
+
+Process::Handle::Handle(pid_t pid)
+    : pid_(pid), pidfd_(static_cast<int>(syscall(SYS_pidfd_open, pid, 0))) {}
 
 Process::Handle::~Handle() {
     if (!detached_) {
         // If this function has already been called then that's okay
         terminate();
     }
+
+    if (pidfd_ >= 0) {
+        close(pidfd_);
+    }
 }
 
 Process::Handle::Handle(Handle&& o) noexcept
-    : detached_(o.detached_), pid_(o.pid_) {
+    : detached_(o.detached_), pid_(o.pid_), pidfd_(o.pidfd_) {
     o.detached_ = true;
+    o.pidfd_ = -1;
 }
 
 Process::Handle& Process::Handle::operator=(Handle&& o) noexcept {
-    o.detached_ = true;
+    if (this != &o) {
+        // The process we owned until now would otherwise be left running
+        if (!detached_) {
+            terminate();
+        }
+        if (pidfd_ >= 0) {
+            close(pidfd_);
+        }
 
-    detached_ = o.detached_;
-    pid_ = o.pid_;
+        detached_ = o.detached_;
+        pid_ = o.pid_;
+        pidfd_ = o.pidfd_;
+
+        o.detached_ = true;
+        o.pidfd_ = -1;
+    }
 
     return *this;
 }
@@ -221,6 +259,13 @@ pid_t Process::Handle::pid() const noexcept {
 }
 
 bool Process::Handle::running() const noexcept {
+    // A pidfd becomes readable once the process has exited, including when
+    // it's a zombie
+    if (pidfd_ >= 0) {
+        pollfd poll_fd{.fd = pidfd_, .events = POLLIN, .revents = 0};
+        return poll(&poll_fd, 1, 0) == 0;
+    }
+
     return pid_running(pid_);
 }
 
@@ -229,17 +274,37 @@ void Process::Handle::detach() noexcept {
 }
 
 void Process::Handle::terminate() const noexcept {
-    kill(pid_, SIGINT);
+    if (pidfd_ >= 0) {
+        syscall(SYS_pidfd_send_signal, pidfd_, SIGINT, nullptr, 0);
+    } else {
+        kill(pid_, SIGINT);
+    }
     wait();
 }
 
 std::optional<int> Process::Handle::wait() const noexcept {
     // This may fail if we've already reaped the process and terminate gets
-    // called another time, so we won't check the result here
-    int status = 0;
-    waitpid(pid_, &status, 0);
+    // called another time, or if the host ignores `SIGCHLD` and the process
+    // has been reaped automatically. In both cases there's no exit code.
+    if (pidfd_ >= 0) {
+        siginfo_t info{};
+        int result;
+        do {
+            result = waitid(static_cast<idtype_t>(P_PIDFD),
+                            static_cast<id_t>(pidfd_), &info, WEXITED);
+        } while (result < 0 && errno == EINTR);
 
-    if (WIFEXITED(status)) {
+        if (result == 0 && info.si_code == CLD_EXITED) {
+            return info.si_status;
+        } else {
+            return std::nullopt;
+        }
+    }
+
+    int status = 0;
+    const pid_t result = waitpid_retry(pid_, &status);
+
+    if (result == pid_ && WIFEXITED(status)) {
         return WEXITSTATUS(status);
     } else {
         return std::nullopt;
@@ -252,7 +317,9 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     // We'll read the results from a pipe. The child writes to the second pipe,
     // we'll read from the first one.
     int stdout_pipe_fds[2];
-    assert(pipe(stdout_pipe_fds) == 0);
+    if (pipe(stdout_pipe_fds) != 0) {
+        return std::error_code(errno, std::system_category());
+    }
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
@@ -269,6 +336,7 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
 
     close(stdout_pipe_fds[1]);
     if (result == 2) {
@@ -282,22 +350,39 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     // Try to read the first line out the output until the line feed
     std::array<char, 1024> output{0};
     FILE* output_pipe_stream = fdopen(stdout_pipe_fds[0], "r");
-    assert(output_pipe_stream);
+    if (!output_pipe_stream) {
+        const int error = errno;
+        close(stdout_pipe_fds[0]);
+        waitpid_retry(child_pid, nullptr);
+
+        return std::error_code(error, std::system_category());
+    }
     [[maybe_unused]] char* not_relevant =
         fgets(output.data(), output.size(), output_pipe_stream);
     fclose(output_pipe_stream);
 
+    // `fgets()` returns the line feed, so we'll get rid of that
+    std::string output_str(output.data());
+    if (!output_str.empty() && output_str.back() == '\n') {
+        output_str.pop_back();
+    }
+
+    // If the host ignores `SIGCHLD`, then the child gets reaped automatically
+    // and `waitpid()` fails with `ECHILD`. We can't know the exit status in
+    // that case, so we'll go by whether the command printed anything.
     int status = 0;
-    assert(waitpid(child_pid, &status, 0) > 0);
+    const pid_t wait_result = waitpid_retry(child_pid, &status);
+    if (wait_result < 0) {
+        if (output_str.empty()) {
+            return Process::CommandNotFound{};
+        } else {
+            return output_str;
+        }
+    }
+
     if (!WIFEXITED(status) || WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
-        // `fgets()` returns the line feed, so we'll get rid of that
-        std::string output_str(output.data());
-        if (output_str.back() == '\n') {
-            output_str.pop_back();
-        }
-
         return output_str;
     }
 }
@@ -315,8 +400,14 @@ Process::StatusResult Process::spawn_get_status() const {
         return std::error_code(result, std::system_category());
     }
 
+    // See `spawn_get_stdout_line()`. Without the exit status there's nothing
+    // meaningful we can return here, so we'll return the error instead.
     int status = 0;
-    assert(waitpid(child_pid, &status, 0) > 0);
+    const pid_t wait_result = waitpid_retry(child_pid, &status);
+    if (wait_result < 0) {
+        return std::error_code(errno, std::system_category());
+    }
+
     if (!WIFEXITED(status) || WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
@@ -378,8 +469,16 @@ Process::HandleResult Process::spawn_child_piped(
     // and the child process will write to the second elements.
     int stdout_pipe_fds[2];
     int stderr_pipe_fds[2];
-    assert(pipe(stdout_pipe_fds) == 0);
-    assert(pipe(stderr_pipe_fds) == 0);
+    if (pipe(stdout_pipe_fds) != 0) {
+        return std::error_code(errno, std::system_category());
+    }
+    if (pipe(stderr_pipe_fds) != 0) {
+        const int error = errno;
+        close(stdout_pipe_fds[0]);
+        close(stdout_pipe_fds[1]);
+
+        return std::error_code(error, std::system_category());
+    }
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
@@ -390,12 +489,18 @@ Process::HandleResult Process::spawn_child_piped(
                                      STDOUT_FILENO);
     posix_spawn_file_actions_adddup2(&actions, stderr_pipe_fds[1],
                                      STDERR_FILENO);
+    // Some Wine builds crash during startup when STDIN is closed, which can
+    // happen when the host itself was started without a STDIN. The Wine host
+    // never reads from STDIN, so we'll always give it `/dev/null` instead.
+    posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null",
+                                     O_RDONLY, 0);
     // We'll close the four pipe fds along with the rest of the file descriptors
     close_non_stdio_file_descriptors(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
 
     // We'll assign the read ends of the pipes to the Asio stream descriptors
     // passed to this function, even if launching the process failed.
@@ -412,16 +517,28 @@ Process::HandleResult Process::spawn_child_piped(
         return std::error_code(result, std::system_category());
     }
 
+    // Open the pidfd while we know the PID still belongs to our child.
+    // `waitpid(WNOHANG)` below may reap the child, after which the PID can be
+    // reused and `pidfd_open()` could target an unrelated process.
+    Process::Handle child(child_pid);
+
     // With glibc `posix_spawn*()` will return 2/`ENOENT` when the file does not
     // exist, but the specification says that it should return a PID that exits
     // with status 127 instead. I have no idea how we'd check for that without
     // waiting here though, so this check may not work
+    // This fails with `ECHILD` if the host ignores `SIGCHLD` and the child
+    // already exited, in which case we can't check the exit status
     int status = 0;
-    assert(waitpid(child_pid, &status, WNOHANG) >= 0);
+    [[maybe_unused]] const pid_t wait_result =
+        waitpid(child_pid, &status, WNOHANG);
+    assert(wait_result >= 0 || errno == ECHILD);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 127) {
+        // The child has already been reaped above, so there is nothing left to
+        // terminate or wait for.
+        child.detach();
         return Process::CommandNotFound{};
     } else {
-        return Handle(child_pid);
+        return child;
     }
 }
 #endif  // WITHOUT_ASIO
@@ -437,23 +554,38 @@ Process::HandleResult Process::spawn_child_redirected(
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, filename.c_str(),
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
+    // Some Wine builds crash during startup when STDIN is closed, which can
+    // happen when the host itself was started without a STDIN. The Wine host
+    // never reads from STDIN, so we'll always give it `/dev/null` instead.
+    posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null",
+                                     O_RDONLY, 0);
     close_non_stdio_file_descriptors(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
     if (result == 2) {
         return Process::CommandNotFound{};
     } else if (result != 0) {
         return std::error_code(result, std::system_category());
     }
 
+    // Open the pidfd before `waitpid(WNOHANG)` can reap the child and its PID
+    // can be reused.
+    Process::Handle child(child_pid);
+
+    // This fails with `ECHILD` if the host ignores `SIGCHLD` and the child
+    // already exited, in which case we can't check the exit status
     int status = 0;
-    assert(waitpid(child_pid, &status, WNOHANG) >= 0);
+    [[maybe_unused]] const pid_t wait_result =
+        waitpid(child_pid, &status, WNOHANG);
+    assert(wait_result >= 0 || errno == ECHILD);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 127) {
+        child.detach();
         return Process::CommandNotFound{};
     } else {
-        return Handle(child_pid);
+        return child;
     }
 }
 

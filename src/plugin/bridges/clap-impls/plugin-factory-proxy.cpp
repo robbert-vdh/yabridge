@@ -84,14 +84,25 @@ clap_plugin_factory_proxy::plugin_factory_create_plugin(
         // This plugin proxy is tied to the instance ID created on the Wine
         // side. That way we can link function calls from the host to the
         // correct plugin instance, and callbacks made from the plugin to the
-        // correct host instance.
-        self->bridge_.register_plugin_proxy(std::make_unique<clap_plugin_proxy>(
-            self->bridge_, *response.instance_id, *descriptor, host));
+        // correct host instance. Starting the audio thread can fail when the
+        // Wine host dies at this point. This is a C API function, so nothing
+        // may escape here.
+        try {
+            self->bridge_.register_plugin_proxy(
+                std::make_unique<clap_plugin_proxy>(
+                    self->bridge_, *response.instance_id, *descriptor, host));
 
-        const auto& [plugin_proxy, _] =
-            self->bridge_.get_proxy(*response.instance_id);
+            const auto& [plugin_proxy, _] =
+                self->bridge_.get_proxy(*response.instance_id);
 
-        return plugin_proxy.plugin_vtable();
+            return plugin_proxy.plugin_vtable();
+        } catch (const std::exception& error) {
+            self->bridge_.logger_.log(
+                "Failed to create a CLAP plugin instance: " +
+                std::string(error.what()));
+
+            return nullptr;
+        }
     } else {
         // The plugin couldn't be created, for whatever reason that might be
         return nullptr;

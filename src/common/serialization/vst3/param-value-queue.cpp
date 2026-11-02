@@ -32,9 +32,16 @@ void YaParamValueQueue::repopulate(
     Steinberg::Vst::IParamValueQueue& original_queue) {
     parameter_id_ = original_queue.getParameterId();
 
-    // Copy over all points to our vector
-    queue_.resize(original_queue.getPointCount());
-    for (int i = 0; i < original_queue.getPointCount(); i++) {
+    // Copy over all points to our vector. The point count is signed, and a
+    // negative value would turn into a huge `size_t`.
+    const int32 point_count = original_queue.getPointCount();
+    if (point_count <= 0) {
+        queue_.clear();
+        return;
+    }
+
+    queue_.resize(static_cast<size_t>(point_count));
+    for (int32 i = 0; i < point_count; i++) {
         // We're skipping the assertions here and just assume that the function
         // returns `kResultOk`
         original_queue.getPoint(i, queue_[i].first, queue_[i].second);

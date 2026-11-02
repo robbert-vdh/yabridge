@@ -100,12 +100,20 @@ X11Window::~X11Window() noexcept {
 X11Window::X11Window(X11Window&& o) noexcept
     : x11_connection_(std::move(o.x11_connection_)),
       window_(std::move(o.window_)) {
+    is_moved_ = o.is_moved_;
     o.is_moved_ = true;
 }
 X11Window& X11Window::operator=(X11Window&& o) noexcept {
     if (&o != this) {
+        // The window we owned until now would otherwise be leaked
+        if (!is_moved_) {
+            xcb_destroy_window(x11_connection_.get(), window_);
+            xcb_flush(x11_connection_.get());
+        }
+
         x11_connection_ = std::move(o.x11_connection_);
         window_ = std::move(o.window_);
+        is_moved_ = o.is_moved_;
 
         o.is_moved_ = true;
     }

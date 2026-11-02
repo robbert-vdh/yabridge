@@ -70,6 +70,15 @@ const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
     const std::u16string& string) noexcept;
 
 /**
+ * Copy an `std::u16string` into a host or plugin provided `String128` buffer,
+ * truncating it if it would not fit together with its null terminator. A plain
+ * `std::copy()` followed by `buffer[string.size()] = 0` writes one past the
+ * end of the buffer for 128 character strings.
+ */
+void copy_to_string128(const std::u16string& string,
+                       Steinberg::Vst::String128 buffer) noexcept;
+
+/**
  * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with
  * because you can't just copy them. So when serializing/deserializing them
  * we'll use `std::array`.
@@ -102,7 +111,7 @@ class WineUID {
     }
 
    protected:
-    ArrayUID uid_;
+    ArrayUID uid_{};
 };
 
 /**
@@ -139,7 +148,7 @@ class NativeUID {
     }
 
    protected:
-    ArrayUID uid_;
+    ArrayUID uid_{};
 };
 
 /**

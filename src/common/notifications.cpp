@@ -142,6 +142,12 @@ bool setup_libdbus() {
 bool send_notification(const std::string& title,
                        const std::string body,
                        std::optional<ghc::filesystem::path> origin) {
+    // Notifications can be sent from multiple threads at once, for instance
+    // when several plugins in a group host notice that the Wine host died.
+    // Only one of them should set up the D-Bus connection.
+    static std::mutex notification_mutex;
+    std::lock_guard lock(notification_mutex);
+
     // The first time this function is called we'll need to set up the D-Bus
     // interface. Previously yabridge relied on notify-send, but some distros
     // don't install that by default.

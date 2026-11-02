@@ -60,8 +60,10 @@ Vst3PluginBridge::Vst3PluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    assert(proxy_object.unregister_context_menu(
-                        request.context_menu_id));
+                    [[maybe_unused]] const bool unregistered =
+                        proxy_object.unregister_context_menu(
+                            request.context_menu_id);
+                    assert(unregistered);
 
                     return Ack{};
                 },
@@ -148,6 +150,10 @@ Vst3PluginBridge::Vst3PluginBridge(const ghc::filesystem::path& plugin_path)
                     //      plugin.
                     Vst3PlugViewProxyImpl* plug_view =
                         proxy_object.last_created_plug_view_;
+                    if (!plug_view) {
+                        return YaComponentHandler3::CreateContextMenuResponse{
+                            .context_menu_args = std::nullopt};
+                    }
 
                     Steinberg::IPtr<Steinberg::Vst::IContextMenu> context_menu =
                         Steinberg::owned(
@@ -228,9 +234,15 @@ Vst3PluginBridge::Vst3PluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
+                    Vst3PlugViewProxyImpl* plug_view =
+                        proxy_object.last_created_plug_view_;
+                    if (!plug_view) {
+                        return Steinberg::kResultFalse;
+                    }
+
                     // REAPER requires this to be run from its provided event
                     // loop or else it will likely segfault at some point
-                    return proxy_object.last_created_plug_view_->run_gui_task(
+                    return plug_view->run_gui_task(
                         [&, &proxy_object = proxy_object]() -> tresult {
                             return proxy_object.context_menus_
                                 .at(request.context_menu_id)
@@ -322,6 +334,9 @@ Vst3PluginBridge::Vst3PluginBridge(const ghc::filesystem::path& plugin_path)
                     //      plugin.
                     Vst3PlugViewProxyImpl* plug_view =
                         proxy_object.last_created_plug_view_;
+                    if (!plug_view) {
+                        return Steinberg::kResultFalse;
+                    }
 
                     // REAPER requires this to be run from its provided event
                     // loop or else it will likely segfault at some point
@@ -421,6 +436,17 @@ Vst3PluginBridge::~Vst3PluginBridge() noexcept {
         // process has already exited (at which point we probably won't be
         // executing this, but maybe if all the stars align)
     }
+
+    // The callback handler uses the plugin proxies and the plugin factory, which
+    // are members declared after it and would be destroyed before the handler
+    // gets joined. Terminating the host above ends the handler's loop.
+    if (host_callback_handler_.joinable()) {
+        if (host_callback_handler_.get_id() == std::this_thread::get_id()) {
+            host_callback_handler_.detach();
+        } else {
+            host_callback_handler_.join();
+        }
+    }
 }
 
 Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
@@ -434,12 +460,33 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
         // will request after loading the module. Host callback handlers should
         // have started before this since the Wine plugin host will request a
         // copy of the configuration during its initialization.
-        Vst3PluginFactoryProxy::ConstructArgs factory_args =
-            sockets_.host_plugin_control_.send_message(
-                Vst3PluginFactoryProxy::Construct{},
-                std::pair<Vst3Logger&, bool>(logger_, true));
-        plugin_factory_ = Steinberg::owned(
-            new Vst3PluginFactoryProxyImpl(*this, std::move(factory_args)));
+        // This is called from a C entry point, so nothing may be thrown from
+        // here. Without a factory the host treats the plugin as failed to load.
+        std::optional<Vst3PluginFactoryProxy::ConstructArgs> factory_args;
+        try {
+            with_live_host([&]() {
+                factory_args = sockets_.host_plugin_control_.send_message(
+                    Vst3PluginFactoryProxy::Construct{},
+                    std::pair<Vst3Logger&, bool>(logger_, true));
+            });
+        } catch (const std::exception& error) {
+            generic_logger_.log(
+                "Failed to fetch the plugin factory from the Wine host: " +
+                std::string(error.what()));
+        }
+
+        if (!factory_args) {
+            return nullptr;
+        }
+
+        try {
+            plugin_factory_ = Steinberg::owned(new Vst3PluginFactoryProxyImpl(
+                *this, std::move(*factory_args)));
+        } catch (const std::exception& error) {
+            generic_logger_.log("Failed to create the plugin factory proxy: " +
+                                std::string(error.what()));
+            return nullptr;
+        }
     }
 
     // Because we're returning a raw pointer, we have to increase the reference
@@ -450,7 +497,7 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
 }
 
 std::pair<Vst3PluginProxyImpl&, std::shared_lock<std::shared_mutex>>
-Vst3PluginBridge::get_proxy(size_t instance_id) noexcept {
+Vst3PluginBridge::get_proxy(size_t instance_id) {
     std::shared_lock lock(plugin_proxies_mutex_);
 
     return std::pair<Vst3PluginProxyImpl&, std::shared_lock<std::shared_mutex>>(
@@ -468,7 +515,31 @@ void Vst3PluginBridge::register_plugin_proxy(
     // be run in the audio processing loop
     if (proxy_object.YaAudioProcessor::supported() ||
         proxy_object.YaComponent::supported()) {
-        sockets_.add_audio_processor_and_connect(proxy_object.instance_id());
+        const auto remove_proxy = [&]() {
+            sockets_.remove_audio_processor(proxy_object.instance_id());
+            plugin_proxies_.erase(proxy_object.instance_id());
+        };
+
+        // The Wine host may have died since it created the object. The proxy's
+        // constructor then throws, so it must not stay behind in this map.
+        bool connected = false;
+        try {
+            connected = with_live_host([&]() {
+                sockets_.add_audio_processor_and_connect(
+                    proxy_object.instance_id());
+            });
+        } catch (...) {
+            // `with_live_host()` only handles connection errors. Be sure to
+            // remove the map entry for other errors as well, or a later
+            // callback would dereference a destroyed proxy.
+            remove_proxy();
+            throw;
+        }
+
+        if (!connected) {
+            remove_proxy();
+            throw std::runtime_error("The Wine plugin host is gone");
+        }
     }
 }
 

@@ -37,6 +37,36 @@ constexpr char other_instance_message_id[] = "yabridge_other_instance";
  */
 constexpr char other_instance_pointer_attribute[] = "other_proxy_ptr";
 
+/**
+ * Fill all of the host's output buffers with silence. Used in
+ * `Vst3PluginProxyImpl::process()` once the Wine plugin host has died.
+ */
+static void write_silence(Steinberg::Vst::ProcessData& data) noexcept {
+    for (int32 bus = 0; bus < data.numOutputs; bus++) {
+        Steinberg::Vst::AudioBusBuffers& buffers = data.outputs[bus];
+        for (int32 channel = 0; channel < buffers.numChannels; channel++) {
+            if (data.symbolicSampleSize == Steinberg::Vst::kSample64) {
+                if (buffers.channelBuffers64 &&
+                    buffers.channelBuffers64[channel]) {
+                    std::fill_n(buffers.channelBuffers64[channel],
+                                data.numSamples, 0.0);
+                }
+            } else {
+                if (buffers.channelBuffers32 &&
+                    buffers.channelBuffers32[channel]) {
+                    std::fill_n(buffers.channelBuffers32[channel],
+                                data.numSamples, 0.0f);
+                }
+            }
+        }
+
+        buffers.silenceFlags =
+            buffers.numChannels >= 64
+                ? ~static_cast<uint64>(0)
+                : (static_cast<uint64>(1) << buffers.numChannels) - 1;
+    }
+}
+
 Vst3PluginProxyImpl::ContextMenu::ContextMenu(
     Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu)
     : menu(menu) {}
@@ -48,11 +78,25 @@ Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
 }
 
 Vst3PluginProxyImpl::~Vst3PluginProxyImpl() noexcept {
-    // NOTE: This can actually throw (e.g. out of memory or the socket got
-    //       closed). But if that were to happen, then we wouldn't be able to
-    //       recover from it anyways.
-    bridge_.send_message(
-        Vst3PluginProxy::Destruct{.instance_id = instance_id()});
+    // NOTE: This can throw -- typically because the socket is closed, when the
+    //       Wine host has already exited. This destructor is `noexcept`, so an
+    //       escaping exception is not an error the host can handle: it is
+    //       `std::terminate()` taking the host application down with it.
+    //
+    //       A host that unloads a VST3 module once nothing references it ends
+    //       the Wine host while proxies may still be destructed afterwards,
+    //       and the ordering is not the host's to control. A goodbye message
+    //       that cannot be delivered because the recipient has already exited
+    //       is not worth a process.
+    try {
+        bridge_.send_message(
+            Vst3PluginProxy::Destruct{.instance_id = instance_id()});
+    } catch (const std::exception&) {
+        // The Wine host is gone. Nothing to tell it, and nothing to do.
+    }
+
+    // Always, including after the send failed: this is the plugin side's own
+    // bookkeeping, and the throw above used to skip it.
     bridge_.unregister_plugin_proxy(*this);
 }
 
@@ -212,6 +256,13 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
+    // Without the Wine plugin host there's nothing left to process. This has to
+    // come first, since `setActive()` may never have set up `process_buffers_`.
+    if (bridge_.host_died()) [[unlikely]] {
+        write_silence(data);
+        return Steinberg::kResultOk;
+    }
+
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
     std::optional<int> new_realtime_priority = std::nullopt;
@@ -249,6 +300,13 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
     bridge_.receive_audio_processor_message_into(
         MessageReference<YaAudioProcessor::Process>(process_request_),
         process_response_);
+
+    // The host may have died during this call, in which case the shared audio
+    // buffers don't contain anything useful
+    if (bridge_.host_died()) [[unlikely]] {
+        write_silence(data);
+        return Steinberg::kResultOk;
+    }
 
     // At this point the shared audio buffers should contain the output audio,
     // so we'll write that back to the host along with any metadata (which in
@@ -369,7 +427,10 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
 
     bus = response.bus;
 
-    {
+    // Don't cache failed queries: a cache hit always reports `kResultOk`, so
+    // caching the zeroed default response would make the host believe the bus
+    // exists with zero channels.
+    if (response.result == Steinberg::kResultOk) {
         std::lock_guard lock(processing_bus_cache_mutex_);
         if (processing_bus_cache_) {
             processing_bus_cache_->bus_info[args] = response.bus;
@@ -467,7 +528,12 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
             bridge_.send_mutually_recursive_message(Vst3PluginProxy::GetState{
                 .instance_id = instance_id(), .state = state});
 
-        assert(response.state.write_back(state) == Steinberg::kResultOk);
+        // If the host's stream rejects the data, then reporting success would
+        // silently lose the plugin's state
+        if (const tresult write_result = response.state.write_back(state);
+            write_result != Steinberg::kResultOk) {
+            return write_result;
+        }
 
         return response.result;
     } else {
@@ -671,8 +737,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParamStringByValue(
                 .id = id,
                 .value_normalized = valueNormalized});
 
-        std::copy(response.string.begin(), response.string.end(), string);
-        string[response.string.size()] = 0;
+        copy_to_string128(response.string, string);
 
         return response.result;
     } else {
@@ -947,8 +1012,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionStringByValue(
                     .id = id,
                     .value_normalized = valueNormalized});
 
-        std::copy(response.string.begin(), response.string.end(), string);
-        string[response.string.size()] = 0;
+        copy_to_string128(response.string, string);
 
         return response.result;
     } else {
@@ -997,7 +1061,10 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getPhysicalUIMapping(
             .channel = channel,
             .list = list});
 
-    response.list.write_back(list);
+    // A default response from a dead Wine plugin host has an empty list
+    if (!bridge_.host_died()) {
+        response.list.write_back(list);
+    }
 
     return response.result;
 }
@@ -1043,6 +1110,12 @@ tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
                 .instance_id = instance_id(),
                 .host_context_args = Vst3HostContextProxy::ConstructArgs(
                     host_context_, instance_id())});
+
+        // The default response we get when the Wine host is gone does not
+        // describe this object, so there's nothing to update
+        if (bridge_.host_died()) {
+            return Steinberg::kResultFalse;
+        }
 
         // HACK: For some reason, Waves plugins will only allow querying the
         //       `IEditController` interface after this point, so we need to
@@ -1098,7 +1171,12 @@ Vst3PluginProxyImpl::getProgramData(Steinberg::Vst::ProgramListID listId,
                                               .program_index = programIndex,
                                               .data = data});
 
-        assert(response.data.write_back(data) == Steinberg::kResultOk);
+        // If the host's stream rejects the data, then reporting success would
+        // silently lose the plugin's state
+        if (const tresult write_result = response.data.write_back(data);
+            write_result != Steinberg::kResultOk) {
+            return write_result;
+        }
 
         return response.result;
     } else {
@@ -1141,7 +1219,12 @@ Vst3PluginProxyImpl::getUnitData(Steinberg::Vst::UnitID unitId,
             bridge_.send_message(YaUnitData::GetUnitData{
                 .instance_id = instance_id(), .unit_id = unitId, .data = data});
 
-        assert(response.data.write_back(data) == Steinberg::kResultOk);
+        // If the host's stream rejects the data, then reporting success would
+        // silently lose the plugin's state
+        if (const tresult write_result = response.data.write_back(data);
+            write_result != Steinberg::kResultOk) {
+            return write_result;
+        }
 
         return response.result;
     } else {
@@ -1208,8 +1291,7 @@ Vst3PluginProxyImpl::getProgramName(Steinberg::Vst::ProgramListID listId,
                                        .list_id = listId,
                                        .program_index = programIndex});
 
-        std::copy(response.name.begin(), response.name.end(), name);
-        name[response.name.size()] = 0;
+        copy_to_string128(response.name, name);
 
         return response.result;
     } else {
@@ -1231,9 +1313,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getProgramInfo(
                                        .program_index = programIndex,
                                        .attribute_id = attributeId});
 
-        std::copy(response.attribute_value.begin(),
-                  response.attribute_value.end(), attributeValue);
-        attributeValue[response.attribute_value.size()] = 0;
+        copy_to_string128(response.attribute_value, attributeValue);
 
         return response.result;
     } else {
@@ -1264,8 +1344,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getProgramPitchName(
                                             .program_index = programIndex,
                                             .midi_pitch = midiPitch});
 
-        std::copy(response.name.begin(), response.name.end(), name);
-        name[response.name.size()] = 0;
+        copy_to_string128(response.name, name);
 
         return response.result;
     } else {

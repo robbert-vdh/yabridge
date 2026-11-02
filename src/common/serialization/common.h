@@ -36,6 +36,19 @@ using native_size_t = uint64_t;
 using native_intptr_t = int64_t;
 
 /**
+ * Whether a request's default-constructed response can safely be sent when
+ * handling the request threw an exception. Most responses are simple value
+ * types, but some responses contain pointers or references into other objects
+ * and would either crash while serializing or look like a successful response.
+ * Those requests have to propagate the exception instead.
+ *
+ * This is specialized for the affected request types in the VST3 and CLAP
+ * serialization headers.
+ */
+template <typename T>
+struct is_safe_default_response : std::true_type {};
+
+/**
  * Empty struct for when we have send a response to some operation without any
  * result values.
  */
@@ -63,7 +76,7 @@ class PrimitiveResponse {
     }
 
    private:
-    T value_;
+    T value_{};
 };
 
 /**

@@ -49,7 +49,7 @@ class YaNoteExpressionController
         /**
          * Whether the object supported this interface.
          */
-        bool supported;
+        bool supported = false;
 
         template <typename S>
         void serialize(S& s) {

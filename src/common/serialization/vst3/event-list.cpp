@@ -190,12 +190,19 @@ void YaEventList::repopulate(Steinberg::Vst::IEventList& event_list) {
     // Copy over all events. Everything gets converted to `YaEvent`s. We sadly
     // can't construct these in place because we don't know the event type yet.
     events_.clear();
-    events_.reserve(event_list.getEventCount());
-    for (int i = 0; i < event_list.getEventCount(); i++) {
-        // We're skipping the `kResultOk` assertions here
-        Steinberg::Vst::Event event;
-        event_list.getEvent(i, event);
-        events_.emplace_back(event);
+    const int32 event_count = event_list.getEventCount();
+    if (event_count <= 0) {
+        return;
+    }
+
+    events_.reserve(static_cast<size_t>(event_count));
+    for (int32 i = 0; i < event_count; i++) {
+        // Events the host fails to give us are skipped rather than passed on
+        // uninitialized
+        Steinberg::Vst::Event event{};
+        if (event_list.getEvent(i, event) == Steinberg::kResultOk) {
+            events_.emplace_back(event);
+        }
     }
 }
 

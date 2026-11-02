@@ -16,6 +16,7 @@
 
 #include "plugin-factory.h"
 
+#include <algorithm>
 #include <iostream>
 #include <type_traits>
 
@@ -36,10 +37,11 @@ YaPluginFactory3::ConstructArgs::ConstructArgs(
         factory->getFactoryInfo(&info) == Steinberg::kResultOk) {
         factory_info = info;
     }
-    // `IPluginFactory::countClasses`
-    num_classes = factory->countClasses();
+    // `IPluginFactory::countClasses` is allowed to return a negative value for
+    // broken plugins, which would otherwise become a huge `size_t`.
+    num_classes = std::max(0, factory->countClasses());
     // `IPluginFactory::getClassInfo`
-    class_infos_1.resize(num_classes);
+    class_infos_1.resize(static_cast<size_t>(num_classes));
     for (int i = 0; i < num_classes; i++) {
         Steinberg::PClassInfo info;
         if (factory->getClassInfo(i, &info) == Steinberg::kResultOk) {

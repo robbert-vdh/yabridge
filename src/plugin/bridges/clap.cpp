@@ -325,6 +325,17 @@ ClapPluginBridge::~ClapPluginBridge() noexcept {
         // process has already exited (at which point we probably won't be
         // executing this, but maybe if all the stars align)
     }
+
+    // The callback handler uses the plugin proxies, which are members declared
+    // after it and would be destroyed before the handler
+    // gets joined. Terminating the host above ends the handler's loop.
+    if (host_callback_handler_.joinable()) {
+        if (host_callback_handler_.get_id() == std::this_thread::get_id()) {
+            host_callback_handler_.detach();
+        } else {
+            host_callback_handler_.join();
+        }
+    }
 }
 
 const void* ClapPluginBridge::get_factory(const char* factory_id) {
@@ -355,7 +366,7 @@ const void* ClapPluginBridge::get_factory(const char* factory_id) {
 }
 
 std::pair<clap_plugin_proxy&, std::shared_lock<std::shared_mutex>>
-ClapPluginBridge::get_proxy(size_t instance_id) noexcept {
+ClapPluginBridge::get_proxy(size_t instance_id) {
     std::shared_lock lock(plugin_proxies_mutex_);
 
     return std::pair<clap_plugin_proxy&, std::shared_lock<std::shared_mutex>>(
@@ -375,7 +386,8 @@ void ClapPluginBridge::register_plugin_proxy(
     // be run in the audio processing loop.
     // Every plugin instance gets its own audio thread along with sockets for
     // host->plugin control messages and plugin->host callbacks
-    std::promise<void> socket_listening_latch;
+    std::promise<std::exception_ptr> socket_startup_latch;
+    auto socket_startup_future = socket_startup_latch.get_future();
     plugin_proxies_.at(instance_id)
         ->audio_thread_handler_ = std::jthread([&, instance_id]() {
         set_realtime_priority(true);
@@ -390,7 +402,7 @@ void ClapPluginBridge::register_plugin_proxy(
         // Certain CLAP extensions allow audio thread callbacks, so we need
         // a dedicated per-instance socket for that
         sockets_.add_audio_thread_and_listen_callback(
-            instance_id, logger_, socket_listening_latch,
+            instance_id, logger_, socket_startup_latch,
             overload{
                 [&](const WantsConfiguration&) -> WantsConfiguration::Response {
                     // FIXME: Without starting the variant with
@@ -432,10 +444,15 @@ void ClapPluginBridge::register_plugin_proxy(
             });
     });
 
-    // Wait for the new socket to be listening on before continuing. Otherwise
-    // the native plugin may try to connect to it before our thread is up and
-    // running.
-    socket_listening_latch.get_future().wait();
+    // Wait for the socket to start or fail before continuing. Otherwise the
+    // native plugin may try to connect to it before our thread is up and
+    // running, and a startup failure would terminate the process.
+    if (std::exception_ptr startup_error = socket_startup_future.get()) {
+        sockets_.remove_audio_thread(instance_id);
+        plugin_proxies_.erase(instance_id);
+
+        std::rethrow_exception(startup_error);
+    }
 }
 
 void ClapPluginBridge::unregister_plugin_proxy(size_t instance_id) {

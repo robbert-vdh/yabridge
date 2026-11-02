@@ -19,6 +19,7 @@
 #include <vestige/aeffectx.h>
 
 #include <asio/io_context.hpp>
+#include <atomic>
 #include <thread>
 
 #include "../../common/communication/vst2.h"
@@ -128,6 +129,13 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
     void do_process(T** inputs, T** outputs, int sample_frames);
 
     /**
+     * Used in `do_process()` to output silence once the Wine plugin host has
+     * died.
+     */
+    template <typename T, bool replacing>
+    void write_silence(T** outputs, int sample_frames);
+
+    /**
      * This AEffect struct will be populated using the data passed by the Wine
      * VST host during initialization and then passed as a pointer to the Linux
      * native VST host from the Linux VST plugin's entry point.
@@ -191,7 +199,7 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * The VST host will expect to be returned a pointer to a struct that stores
      * the dimensions of the editor window.
      */
-    VstRect editor_rectangle_;
+    VstRect editor_rectangle_{};
 
     /**
      * Sending MIDI events sent to the host by the plugin using
@@ -219,4 +227,14 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      */
     std::optional<std::pair<int, int>> incoming_resize_;
     std::mutex incoming_resize_mutex_;
+
+    /**
+     * The plugin's answer to `effCanDo("supportsGainReductionInfo")`, or
+     * `unknown` if the host hasn't asked. When it's `no`, REAPER's per-block
+     * gain reduction queries are answered without involving the Wine plugin
+     * host.
+     */
+    enum class GainReductionSupport { unknown, yes, no };
+    std::atomic<GainReductionSupport> gain_reduction_support_ =
+        GainReductionSupport::unknown;
 };

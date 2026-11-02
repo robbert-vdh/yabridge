@@ -85,8 +85,10 @@ extern "C" YABRIDGE_EXPORT AEffect* VSTPluginMain(
     audioMasterCallback host_callback) {
     assert(host_callback);
 
-    const fs::path plugin_path = get_this_file_location();
+    fs::path plugin_path;
     try {
+        plugin_path = get_this_file_location();
+
         // This is the only place where we have to use manual memory management.
         // The bridge's destructor is called when the `effClose` opcode is
         // received.

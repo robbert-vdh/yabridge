@@ -18,6 +18,29 @@
 
 #include "../clap.h"
 
+/**
+ * Fill all of the host's output buffers with silence. Used when the Wine plugin
+ * host is no longer there to process audio.
+ */
+static void write_silence(const clap_process_t& process) noexcept {
+    for (uint32_t port = 0; port < process.audio_outputs_count; port++) {
+        clap_audio_buffer_t& buffer = process.audio_outputs[port];
+        for (uint32_t channel = 0; channel < buffer.channel_count; channel++) {
+            if (buffer.data32 && buffer.data32[channel]) {
+                std::fill_n(buffer.data32[channel], process.frames_count, 0.0f);
+            }
+            if (buffer.data64 && buffer.data64[channel]) {
+                std::fill_n(buffer.data64[channel], process.frames_count, 0.0);
+            }
+        }
+
+        buffer.constant_mask =
+            buffer.channel_count >= 64
+                ? ~static_cast<uint64_t>(0)
+                : (static_cast<uint64_t>(1) << buffer.channel_count) - 1;
+    }
+}
+
 ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
     : audio_ports(static_cast<const clap_host_audio_ports_t*>(
           host.get_extension(&host, CLAP_EXT_AUDIO_PORTS))),
@@ -181,9 +204,13 @@ clap_plugin_proxy::plugin_destroy(const struct clap_plugin* plugin) {
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
     // This will clean everything related to this instance up on the Wine plugin
-    // host side
-    self->bridge_.send_mutually_recursive_main_thread_message(
-        clap::plugin::Destroy{.instance_id = self->instance_id()});
+    // host side. Whatever happens there, the proxy must still be removed below
+    // or it would be leaked along with its sockets.
+    try {
+        self->bridge_.send_mutually_recursive_main_thread_message(
+            clap::plugin::Destroy{.instance_id = self->instance_id()});
+    } catch (const std::exception&) {
+    }
 
     // And this deallocates and destroys `self`
     self->bridge_.unregister_plugin_proxy(self->instance_id());
@@ -264,6 +291,13 @@ clap_plugin_proxy::plugin_process(const struct clap_plugin* plugin,
     assert(plugin && plugin->plugin_data && process);
     auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
 
+    // Without the Wine plugin host there's nothing left to process. This has to
+    // come first, since `activate()` may never have set up `process_buffers_`.
+    if (self->bridge_.host_died()) [[unlikely]] {
+        write_silence(*process);
+        return CLAP_PROCESS_CONTINUE;
+    }
+
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
     std::optional<int> new_realtime_priority = std::nullopt;
@@ -305,6 +339,13 @@ clap_plugin_proxy::plugin_process(const struct clap_plugin* plugin,
     self->bridge_.receive_audio_thread_message_into(
         MessageReference<clap::plugin::Process>(self->process_request_),
         self->process_response_);
+
+    // The host may have died during this call, in which case the shared audio
+    // buffers don't contain anything useful
+    if (self->bridge_.host_died()) [[unlikely]] {
+        write_silence(*process);
+        return CLAP_PROCESS_CONTINUE;
+    }
 
     // At this point the shared audio buffers should contain the output audio,
     // so we'll write that back to the host along with any metadata (which in

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#include <algorithm>
 #include <cassert>
 #include <iomanip>
 #include <sstream>
@@ -64,6 +65,14 @@ const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
 #else
     return static_cast<const Steinberg::Vst::TChar*>(string.c_str());
 #endif
+}
+
+void copy_to_string128(const std::u16string& string,
+                       Steinberg::Vst::String128 buffer) noexcept {
+    const size_t length = std::min(
+        string.size(), std::extent_v<Steinberg::Vst::String128> - 1);
+    std::copy_n(string.begin(), length, buffer);
+    buffer[length] = 0;
 }
 
 // GCC 12.2's `std::to_array()` throws spurious array access out of bounds

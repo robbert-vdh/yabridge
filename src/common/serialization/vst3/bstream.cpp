@@ -34,8 +34,13 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
     //       We _don't_ want to copy that, since some plugins may try to read
     //       the entire preset and fail to load. Examples of such plugins are
     //       the iZotope Rx7 plugins.
-    int64 old_position;
-    stream->tell(&old_position);
+    // If the host's stream can't tell its position, we'll start from the
+    // beginning rather than from an uninitialized offset
+    int64 old_position = 0;
+    if (stream->tell(&old_position) != Steinberg::kResultOk ||
+        old_position < 0) {
+        old_position = 0;
+    }
     if (stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekEnd) ==
         Steinberg::kResultOk) {
         int64 size = 0;
@@ -49,7 +54,13 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
                          Steinberg::IBStream::IStreamSeekMode::kIBSeekSet);
             stream->read(buffer_.data(), static_cast<int32>(size),
                          &num_bytes_read);
-            assert(num_bytes_read == 0 || num_bytes_read == size);
+
+            // Some hosts don't report the number of bytes read, so 0 is taken
+            // to mean everything. Anything else that's short is truncated
+            // rather than passed on with trailing zeroes.
+            if (num_bytes_read > 0 && num_bytes_read < size) {
+                buffer_.resize(static_cast<size_t>(num_bytes_read));
+            }
         }
     }
 
@@ -111,12 +122,18 @@ tresult YaBStream::write_back(Steinberg::IBStream* stream) const {
     // A `stream->seek(0, kIBSeekSet)` breaks restoring states in Bitwig. Not
     // sure if Bitwig is prepending a header or if this is expected behaviour.
     int32 num_bytes_written = 0;
-    if (stream->write(const_cast<uint8_t*>(buffer_.data()),
-                      static_cast<int32>(buffer_.size()),
-                      &num_bytes_written) == Steinberg::kResultOk) {
-        // Some implementations will return `kResultFalse` when writing 0 bytes
-        assert(num_bytes_written == 0 ||
-               static_cast<size_t>(num_bytes_written) == buffer_.size());
+    const tresult write_result =
+        stream->write(const_cast<uint8_t*>(buffer_.data()),
+                      static_cast<int32>(buffer_.size()), &num_bytes_written);
+
+    // Some implementations will return `kResultFalse` when writing 0 bytes, and
+    // some don't report the number of bytes written. Any other failure means
+    // the plugin's data didn't make it into the host's stream.
+    if (!buffer_.empty() &&
+        (write_result != Steinberg::kResultOk ||
+         (num_bytes_written != 0 &&
+          static_cast<size_t>(num_bytes_written) != buffer_.size()))) {
+        return Steinberg::kResultFalse;
     }
 
     // Write back any attributes written by the plugin if the host supports
@@ -146,9 +163,11 @@ tresult PLUGIN_API YaBStream::read(void* buffer,
         return Steinberg::kInvalidArgument;
     }
 
-    const int64_t bytes_to_read =
+    // `setStreamSize()` can shrink the buffer to before the seek position
+    const int64_t bytes_to_read = std::max(
+        static_cast<int64_t>(0),
         std::min(static_cast<int64_t>(numBytes),
-                 static_cast<int64_t>(buffer_.size()) - seek_position_);
+                 static_cast<int64_t>(buffer_.size()) - seek_position_));
 
     if (bytes_to_read > 0) {
         std::copy_n(&buffer_[seek_position_], bytes_to_read,
@@ -226,14 +245,17 @@ tresult PLUGIN_API YaBStream::getStreamSize(int64& size) {
 }
 
 tresult PLUGIN_API YaBStream::setStreamSize(int64 size) {
-    buffer_.resize(size);
+    if (size < 0) {
+        return Steinberg::kInvalidArgument;
+    }
+
+    buffer_.resize(static_cast<size_t>(size));
     return Steinberg::kResultOk;
 }
 
 tresult PLUGIN_API YaBStream::getFileName(Steinberg::Vst::String128 name) {
     if (name && file_name_) {
-        std::copy(file_name_->begin(), file_name_->end(), name);
-        name[file_name_->size()] = 0;
+        copy_to_string128(*file_name_, name);
 
         return Steinberg::kResultOk;
     } else {

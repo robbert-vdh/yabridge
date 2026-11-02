@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <exception>
 #include <future>
 #include <variant>
 
@@ -222,10 +223,10 @@ class ClapSockets final : public Sockets {
      *
      * @param instance_id The object instance identifier of the socket.
      * @param logger The native plugin's logger instance.
-     * @param socket_listening_latch A promise we'll set a value for once the
-     *   socket is being listened on so we can wait for it. Otherwise it can be
-     *   that the native plugin already tries to connect to the socket before
-     *   Wine plugin host is even listening on it.
+     * @param socket_startup_latch A promise we'll set a value for once the
+     *   socket has either connected or failed to connect. This lets the caller
+     *   distinguish a startup failure from a working listener, which would
+     *   otherwise block forever.
      * @param cb An overloaded function that can take every type `T` in the
      *   `ClapAudioThreadCallbackRequest` variant and then returns
      *   `T::Response`.
@@ -237,20 +238,27 @@ class ClapSockets final : public Sockets {
     void add_audio_thread_and_listen_callback(
         size_t instance_id,
         ClapLogger& logger,
-        std::promise<void>& socket_listening_latch,
+        std::promise<std::exception_ptr>& socket_startup_latch,
         F&& callback) {
-        {
-            std::lock_guard lock(audio_thread_sockets_mutex_);
-            audio_thread_sockets_.try_emplace(instance_id, io_context_,
-                                              base_dir_, instance_id, true);
-        }
-
         // This is called on the native plugin side after the Wine side is
         // already listening on the sockets. We'll connect here, and once the
         // connection has been made we unlock the latch to finalize the plugin
-        // instance creation.
-        audio_thread_sockets_.at(instance_id).connect();
-        socket_listening_latch.set_value();
+        // instance creation. If setting up the sockets or connecting fails,
+        // we have to report that through the latch instead of letting the
+        // exception escape this thread.
+        try {
+            {
+                std::lock_guard lock(audio_thread_sockets_mutex_);
+                audio_thread_sockets_.try_emplace(instance_id, io_context_,
+                                                  base_dir_, instance_id, true);
+            }
+
+            audio_thread_sockets_.at(instance_id).connect();
+            socket_startup_latch.set_value(nullptr);
+        } catch (...) {
+            socket_startup_latch.set_value(std::current_exception());
+            return;
+        }
 
         // This `true` indicates that we want to reuse our serialization and
         // receiving buffers for all calls. This slightly reduces the amount of
