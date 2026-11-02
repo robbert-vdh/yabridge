@@ -20,6 +20,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   **Ardour** that would cause yabridge to hang and eventually crash the host by
   consuming too much memory. This only affected the prebuilt binaries from the
   releases page.
+- Fixed an issue where **REAPER** could crash with a `BadWindow` X11 error when
+  quickly switching between plugin editors
+  ([#531](https://github.com/robbert-vdh/yabridge/pull/531)) This was easy to
+  trigger in **REAPER** by quickly switching between plugins in the FX chain
+  window.
 - A couple more VST3 functions are now called from the UI thread. This should
   help with compatibility with plugins using modern VSTGUI versions, such as
   _Serum 2_.

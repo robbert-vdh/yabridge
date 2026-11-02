@@ -212,6 +212,10 @@ DeferredWin32Window::DeferredWin32Window(
       x11_connection_(x11_connection) {}
 
 DeferredWin32Window::~DeferredWin32Window() noexcept {
+    SetWindowLongPtr(handle_, GWLP_USERDATA, 0);
+    if (GetActiveWindow() == handle_) {
+        SetActiveWindow(nullptr);
+    }
     // NOTE: For some rason, Wine will sometimes try to delete a window twice if
     //       the parent window no longer exists. I've only seen this cause
     //       issues with plugins that hang when their window is hidden, like the
@@ -222,6 +226,7 @@ DeferredWin32Window::~DeferredWin32Window() noexcept {
         const xcb_window_t wine_window = get_x11_handle(handle_);
         const xcb_window_t root_window =
             get_root_window(*x11_connection_, wine_window);
+        xcb_unmap_window(x11_connection_.get(), wine_window);
         xcb_reparent_window(x11_connection_.get(), wine_window, root_window, 0,
                             0);
     } catch (const std::runtime_error& error) {
@@ -280,6 +285,32 @@ Editor::Editor(MainContext& main_context,
       host_window_config_({}),
       parent_window_config_({}),
       parent_window_config_abs_(false),
+      xcb_wm_state_property_(
+          get_atom_by_name(*x11_connection_, icccm_wm_state_property_name)),
+      xcb_wm_window_role_property_(
+          get_atom_by_name(*x11_connection_,
+                           icccm_wm_window_role_property_name)),
+      parent_window_(parent_window_handle),
+      wrapper_window_(
+          x11_connection_,
+          [parent_window = parent_window_,
+           wrapper_window_size = wrapper_window_size_](
+              std::shared_ptr<xcb_connection_t> x11_connection,
+              xcb_window_t window) {
+              xcb_generic_error_t* error = nullptr;
+              const xcb_query_tree_cookie_t query_cookie =
+                  xcb_query_tree(x11_connection.get(), parent_window);
+              const std::unique_ptr<xcb_query_tree_reply_t> query_reply(
+                  xcb_query_tree_reply(x11_connection.get(), query_cookie,
+                                       &error));
+              THROW_X11_ERROR(error);
+
+              xcb_create_window(
+                  x11_connection.get(), XCB_COPY_FROM_PARENT, window,
+                  query_reply->root, 0, 0, wrapper_window_size.width,
+                  wrapper_window_size.height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                  XCB_COPY_FROM_PARENT, 0, nullptr);
+          }),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
@@ -311,32 +342,6 @@ Editor::Editor(MainContext& main_context,
               (*timer_proc)();
           }
       }),
-      xcb_wm_state_property_(
-          get_atom_by_name(*x11_connection_, icccm_wm_state_property_name)),
-      xcb_wm_window_role_property_(
-          get_atom_by_name(*x11_connection_,
-                           icccm_wm_window_role_property_name)),
-      parent_window_(parent_window_handle),
-      wrapper_window_(
-          x11_connection_,
-          [parent_window = parent_window_,
-           wrapper_window_size = wrapper_window_size_](
-              std::shared_ptr<xcb_connection_t> x11_connection,
-              xcb_window_t window) {
-              xcb_generic_error_t* error = nullptr;
-              const xcb_query_tree_cookie_t query_cookie =
-                  xcb_query_tree(x11_connection.get(), parent_window);
-              const std::unique_ptr<xcb_query_tree_reply_t> query_reply(
-                  xcb_query_tree_reply(x11_connection.get(), query_cookie,
-                                       &error));
-              THROW_X11_ERROR(error);
-
-              xcb_create_window(
-                  x11_connection.get(), XCB_COPY_FROM_PARENT, window,
-                  query_reply->root, 0, 0, wrapper_window_size.width,
-                  wrapper_window_size.height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                  XCB_COPY_FROM_PARENT, 0, nullptr);
-          }),
       wine_window_(get_x11_handle(win32_window_.handle_)),
       host_window_(find_host_window(*x11_connection_,
                                     parent_window_,

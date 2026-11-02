@@ -360,6 +360,27 @@ class Editor {
     bool parent_window_config_abs_;
 
     /**
+     * The atom corresponding to `WM_STATE`.
+     */
+    xcb_atom_t xcb_wm_state_property_;
+
+    /**
+     * The atom corresponding to `WM_WINDOW_ROLE`.
+     */
+    xcb_atom_t xcb_wm_window_role_property_;
+
+    /**
+     * The window handle of the editor window created by the DAW.
+     */
+    const xcb_window_t parent_window_;
+    /**
+     * A window that sits between `parent_window_` and `wine_window_`. The
+     * entire purpose of this is to prevent the host from responding to the
+     * `ConfigureNotify` events we send to `wine_window_` when the host
+     * subscribes to `SubStructureNotify` events on `parent_window_`.
+     */
+    X11Window wrapper_window_;
+    /**
      * The handle for the window created through Wine that the plugin uses to
      * embed itself in.
      */
@@ -385,27 +406,6 @@ class Editor {
      */
     fu2::unique_function<void()> idle_timer_proc_;
 
-    /**
-     * The atom corresponding to `WM_STATE`.
-     */
-    xcb_atom_t xcb_wm_state_property_;
-
-    /**
-     * The atom corresponding to `WM_WINDOW_ROLE`.
-     */
-    xcb_atom_t xcb_wm_window_role_property_;
-
-    /**
-     * The window handle of the editor window created by the DAW.
-     */
-    const xcb_window_t parent_window_;
-    /**
-     * A window that sits between `parent_window_` and `wine_window_`. The
-     * entire purpose of this is to prevent the host from responding to the
-     * `ConfigureNotify` events we send to `wine_window_` when the host
-     * subscribes to `SubStructureNotify` events on `parent_window_`.
-     */
-    X11Window wrapper_window_;
     /**
      * The X11 window handle of the window belonging to `win32_window_`.
      */
