@@ -33,6 +33,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   sides of the screen.
 - Similarly, popups should no longer spuriously appear in the wrong placeo n
   screen. This mostly affected _MeldaProduction_ plugin
+- Fixed a VST3 deadlock that could freeze the host when it called
+  `IPlugView::onFocus()` while the plugin was waiting for
+  `IPlugFrame::resizeView()` to finish. This was seen in **Bitwig Studio** with
+  _FabFilter Pro-G_.
 
 ### Removed
 

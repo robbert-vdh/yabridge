@@ -1057,15 +1057,17 @@ void Vst3Bridge::run() {
             },
             [&](const YaPlugView::OnFocus& request)
                 -> YaPlugView::OnFocus::Response {
-                return main_context_
-                    .run_in_context([&]() -> tresult {
-                        const auto& [instance, _] =
-                            get_instance(request.owner_instance_id);
+                // The host can call this while the plugin is blocked on the GUI
+                // thread in `IPlugFrame::resizeView()`. If the host then only
+                // handles that resize after this function returns, then both
+                // sides would wait on each other forever.
+                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                    const auto& [instance, _] =
+                        get_instance(request.owner_instance_id);
 
-                        return instance.plug_view_instance->plug_view->onFocus(
-                            request.state);
-                    })
-                    .get();
+                    return instance.plug_view_instance->plug_view->onFocus(
+                        request.state);
+                });
             },
             [&](YaPlugView::SetFrame& request)
                 -> YaPlugView::SetFrame::Response {
