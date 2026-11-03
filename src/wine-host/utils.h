@@ -161,6 +161,7 @@ class Win32Timer {
 class MainContext {
    public:
     MainContext();
+    ~MainContext();
 
     /**
      * Run the IO context. This rest of this class assumes that this is only
@@ -243,12 +244,20 @@ class MainContext {
      * that may involve the Win32 message loop are all run from the same thread.
      */
     template <std::invocable F>
-    std::future<std::invoke_result_t<F>> run_in_context(F&& fn) {
+    std::future<std::invoke_result_t<F>> run_in_context(
+        F&& fn,
+        bool allow_in_modal_loop = false) {
         using Result = std::invoke_result_t<F>;
 
         std::packaged_task<Result()> call_fn(std::forward<F>(fn));
         std::future<Result> result = call_fn.get_future();
-        asio::dispatch(context_, std::move(call_fn));
+        if (!allow_in_modal_loop) {
+            asio::dispatch(context_, std::move(call_fn));
+        } else if (context_.get_executor().running_in_this_thread()) {
+            call_fn();
+        } else {
+            post_gui_task(std::move(call_fn));
+        }
 
         return result;
     }
@@ -308,6 +317,9 @@ class MainContext {
     asio::io_context context_;
 
    private:
+    void post_gui_task(fu2::unique_function<void()> task);
+    HWND task_window_;
+
     /**
      * Start a timer to periodically check whether the host processes belong to
      * all active plugin bridges are still alive. We will shut down the plugin

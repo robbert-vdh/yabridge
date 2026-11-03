@@ -252,8 +252,8 @@ void Vst3Bridge::run() {
                 //       state unless this function is run from the GUI thread
                 // NOTE: This also requires mutual recursion because REAPER will
                 //       call `getState()` while opening a popup menu
-                const tresult result =
-                    do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                const tresult result = do_mutual_recursion_on_gui_thread(
+                    [&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
@@ -267,7 +267,8 @@ void Vst3Bridge::run() {
                             return instance.interfaces.edit_controller
                                 ->getState(&request.state);
                         }
-                    });
+                    },
+                    true);
 
                 return Vst3PluginProxy::GetStateResponse{
                     .result = result, .state = std::move(request.state)};
