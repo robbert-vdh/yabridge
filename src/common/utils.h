@@ -87,16 +87,30 @@ ghc::filesystem::path get_temporary_directory();
 std::optional<int> get_realtime_priority() noexcept;
 
 /**
- * Set the scheduling policy to `SCHED_FIFO` with priority 5 for this process.
- * We explicitly don't do this for wineserver itself since from my testing that
- * can actually increase latencies.
+ * The `SCHED_FIFO` priority we create our realtime threads at before we know
+ * which priority the host uses for its own audio threads. This is 5 by default,
+ * but it can be overridden through the `YABRIDGE_FALLBACK_RT_PRIORITY`
+ * environment variable. That's only useful on systems that treat realtime
+ * priority as a scheduling or CPU placement signal, since everything that runs
+ * on those threads before the first process call still runs at this priority.
+ * The environment variable is read once, and the value is clamped to the valid
+ * `SCHED_FIFO` range and to the `RLIMIT_RTPRIO` limit so that a nonsensical
+ * value can't leave the thread on `SCHED_OTHER`.
+ */
+int fallback_realtime_priority() noexcept;
+
+/**
+ * Set the scheduling policy to `SCHED_FIFO` for this process. We explicitly
+ * don't do this for wineserver itself since from my testing that can actually
+ * increase latencies.
  *
  * @param sched_fifo If true, set the current process/thread's scheudling policy
  *   to `SCHED_FIFO`. Otherwise reset it back to `SCHWED_OTHER`.
  * @param priority The scheduling priority to use. The exact value usually
  *   doesn't really matter unless there are a lot of other active `SCHED_FIFO`
- *   background tasks. We'll use 5 as a default, but we'll periodically copy the
- *   priority set by the host on the audio threads.
+ *   background tasks. We'll use `fallback_realtime_priority()` as a default,
+ *   but we'll periodically copy the priority set by the host on the audio
+ *   threads.
  *
  * @return Whether the operation was successful or not. This will fail if the
  *   user does not have the privileges to set realtime priorities.
@@ -107,7 +121,9 @@ std::optional<int> get_realtime_priority() noexcept;
  *       propagate to a Windows plugin's audio threads, and I don't think
  *       there's a way to go back once you've set `SCHED_RESET_ON_FORK`.
  */
-bool set_realtime_priority(bool sched_fifo, int priority = 5) noexcept;
+bool set_realtime_priority(
+    bool sched_fifo,
+    int priority = fallback_realtime_priority()) noexcept;
 
 /**
  * Get the (soft) `RLIMIT_MEMLOCK` resource limit. If this is set to some low

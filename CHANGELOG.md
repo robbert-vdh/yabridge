@@ -8,6 +8,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added a `YABRIDGE_FALLBACK_RT_PRIORITY` environment variable to change the
+  `SCHED_FIFO` priority yabridge's realtime threads are created at before the
+  priority the host uses on its own audio threads is known. This still defaults
+  to 5, and it's only useful on systems that treat realtime priority as a
+  scheduling or CPU placement signal. See the [performance
+  tuning](https://github.com/robbert-vdh/yabridge#performance-tuning) section of
+  the readme for more information.
+
 ### Fixed
 
 - Fixed a compatibility issue with **Wine 9.22** and above that caused mouse
