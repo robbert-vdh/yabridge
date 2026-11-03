@@ -19,6 +19,7 @@
 #include <vestige/aeffectx.h>
 
 #include <asio/io_context.hpp>
+#include <atomic>
 #include <thread>
 
 #include "../../common/communication/vst2.h"
@@ -219,4 +220,14 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      */
     std::optional<std::pair<int, int>> incoming_resize_;
     std::mutex incoming_resize_mutex_;
+
+    /**
+     * The plugin's answer to `effCanDo("supportsGainReductionInfo")`, or
+     * `unknown` if the host hasn't asked. When it's `no`, REAPER's per-block
+     * gain reduction queries are answered without involving the Wine plugin
+     * host.
+     */
+    enum class GainReductionSupport { unknown, yes, no };
+    std::atomic<GainReductionSupport> gain_reduction_support_ =
+        GainReductionSupport::unknown;
 };
