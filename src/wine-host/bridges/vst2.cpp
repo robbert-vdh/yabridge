@@ -448,29 +448,39 @@ void Vst2Bridge::run() {
                         // implements the corresponding Windows API
                         const bool is_realtime_request =
                             unsafe_requests_realtime.contains(opcode);
+                        const bool allow_in_modal_loop =
+                            opcode == effGetChunk ||
+                            (opcode == effVendorSpecific &&
+                             (index == CCONST('s', 't', 'C', 'A') ||
+                              index == CCONST('s', 't', 'C', 'a')) &&
+                             value == CCONST('F', 'U', 'I', 'D'));
 
                         return main_context_
-                            .run_in_context([&]() -> intptr_t {
-                                if (is_realtime_request) {
-                                    set_realtime_priority(true);
-                                }
+                            .run_in_context(
+                                [&]() -> intptr_t {
+                                    if (is_realtime_request) {
+                                        set_realtime_priority(true);
+                                    }
 
-                                const intptr_t result = dispatch_wrapper(
-                                    plugin, opcode, index, value, data, option);
+                                    const intptr_t result =
+                                        dispatch_wrapper(plugin, opcode, index,
+                                                         value, data, option);
 
-                                if (is_realtime_request) {
-                                    set_realtime_priority(false);
-                                }
+                                    if (is_realtime_request) {
+                                        set_realtime_priority(false);
+                                    }
 
-                                // The Win32 message loop will not be run up to
-                                // this point to prevent plugins with partially
-                                // initialized states from misbehaving
-                                if (opcode == effOpen) {
-                                    is_initialized_ = true;
-                                }
+                                    // The Win32 message loop will not be run up
+                                    // to this point to prevent plugins with
+                                    // partially initialized states from
+                                    // misbehaving
+                                    if (opcode == effOpen) {
+                                        is_initialized_ = true;
+                                    }
 
-                                return result;
-                            })
+                                    return result;
+                                },
+                                allow_in_modal_loop)
                             .get();
                     } else if (safe_mutually_recursive_requests.contains(
                                    opcode)) {

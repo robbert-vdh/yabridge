@@ -78,11 +78,66 @@ Win32Timer& Win32Timer::operator=(Win32Timer&& o) noexcept {
     return *this;
 }
 
+static LRESULT CALLBACK main_context_window_proc(HWND window,
+                                                 UINT message,
+                                                 WPARAM wParam,
+                                                 LPARAM lParam) {
+    if (message == WM_APP) {
+        std::unique_ptr<fu2::unique_function<void()>> task(
+            reinterpret_cast<fu2::unique_function<void()>*>(lParam));
+        (*task)();
+        return 0;
+    }
+    return DefWindowProc(window, message, wParam, lParam);
+}
+
 MainContext::MainContext()
     : context_(),
       events_timer_(context_),
       watchdog_context_(),
-      watchdog_timer_(watchdog_context_) {}
+      watchdog_timer_(watchdog_context_) {
+    static const ATOM window_class = [] {
+        WNDCLASS cls{};
+        cls.lpfnWndProc = main_context_window_proc;
+        cls.hInstance = GetModuleHandle(nullptr);
+        cls.lpszClassName = "yabridge main context";
+        return RegisterClass(&cls);
+    }();
+    if (!window_class ||
+        !(task_window_ = CreateWindowEx(0, MAKEINTATOM(window_class), "", 0, 0,
+                                        0, 0, 0, HWND_MESSAGE, nullptr,
+                                        GetModuleHandle(nullptr), nullptr))) {
+        throw std::runtime_error("Could not create the GUI task window");
+    }
+}
+
+MainContext::~MainContext() {
+    MSG message;
+    while (PeekMessage(&message, task_window_, WM_APP, WM_APP, PM_REMOVE)) {
+        delete reinterpret_cast<fu2::unique_function<void()>*>(message.lParam);
+    }
+    DestroyWindow(task_window_);
+}
+
+void MainContext::post_gui_task(fu2::unique_function<void()> task) {
+    auto pending =
+        std::make_unique<fu2::unique_function<void()>>(std::move(task));
+    if (!PostMessage(task_window_, WM_APP, 0,
+                     reinterpret_cast<LPARAM>(pending.get()))) {
+        throw std::runtime_error("Could not post a GUI task");
+    }
+    pending.release();
+    try {
+        asio::post(context_, [this]() {
+            MSG message;
+            while (PeekMessage(&message, task_window_, WM_APP, WM_APP,
+                               PM_REMOVE)) {
+                DispatchMessage(&message);
+            }
+        });
+    } catch (const std::bad_alloc&) {
+    }
+}
 
 void MainContext::run() {
     // We need to know which thread is the GUI thread because mutual recursion
