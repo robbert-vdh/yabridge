@@ -29,6 +29,39 @@
 class Vst3PluginProxyImpl;
 
 /**
+ * Whether the calling thread is the host's GUI thread, the thread that runs the
+ * `IRunLoop` event handlers from `RunLoopTasks`. This is only known once the
+ * host has passed an `IRunLoop` to any plugin in this process, and it's `false`
+ * before that.
+ */
+bool is_host_gui_thread();
+
+/**
+ * Called from `MutualRecursionHelper::fork()` when the host's GUI thread starts
+ * waiting for a Wine plugin host. Until `end_host_gui_thread_wait()` is called
+ * with the same context, every task scheduled to any `RunLoopTasks` instance in
+ * this process is also handed to `context` so the GUI thread runs it while it
+ * waits. Tasks that were already pending are handed over immediately. This does
+ * nothing when not called from the host's GUI thread.
+ *
+ * The host's GUI thread cannot handle its run loop while it waits, and the
+ * plugin host may not be able to answer before one of those tasks has run. The
+ * plugin host's GUI thread can, for instance, be blocked in
+ * `IPlugFrame::resizeView()` for the editor we're talking to, for another
+ * instance of the same plugin, or for another plugin in the same plugin group.
+ * All yabridge VST3 plugins in a process share this library, so this covers
+ * all of them.
+ */
+void begin_host_gui_thread_wait(
+    const std::shared_ptr<asio::io_context>& context);
+
+/**
+ * Stop handing tasks to `context`. Called from `MutualRecursionHelper::fork()`
+ * before the context stops accepting work.
+ */
+void end_host_gui_thread_wait(const std::shared_ptr<asio::io_context>& context);
+
+/**
  * This handles the communication between the native host and a VST3 plugin
  * hosted in our Wine plugin host. VST3 is handled very differently from VST2
  * because a plugin is no longer its own entity, but rather a definition of
@@ -170,7 +203,42 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
-        return mutual_recursion_.fork([&]() { return send_message(object); });
+        return mutual_recursion_.fork([&]() { return send_message(object); },
+                                      begin_host_gui_thread_wait,
+                                      end_host_gui_thread_wait);
+    }
+
+    /**
+     * Send a message that the Wine plugin host handles on its GUI thread. When
+     * called from the host's GUI thread this works like
+     * `send_mutually_recursive_message()`, so the host's GUI thread keeps
+     * running tasks the plugin host's GUI thread may be waiting on. See
+     * `begin_host_gui_thread_wait()`. From any other thread this is the same as
+     * `send_message()`.
+     */
+    template <typename T>
+    typename T::Response send_gui_thread_message(const T& object) {
+        if (is_host_gui_thread()) {
+            return send_mutually_recursive_message(object);
+        } else {
+            return send_message(object);
+        }
+    }
+
+    /**
+     * The same as `send_gui_thread_message()`, but for
+     * `send_audio_processor_message()`.
+     */
+    template <typename T>
+    typename T::Response send_gui_thread_audio_processor_message(
+        const T& object) {
+        if (is_host_gui_thread()) {
+            return mutual_recursion_.fork(
+                [&]() { return send_audio_processor_message(object); },
+                begin_host_gui_thread_wait, end_host_gui_thread_wait);
+        } else {
+            return send_audio_processor_message(object);
+        }
     }
 
     /**

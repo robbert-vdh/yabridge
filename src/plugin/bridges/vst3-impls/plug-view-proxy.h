@@ -64,11 +64,32 @@ class RunLoopTasks : public Steinberg::Linux::IEventHandler {
      */
     void schedule(fu2::unique_function<void()> task);
 
+    /**
+     * Run all tasks that have been scheduled but haven't been picked up by the
+     * host's run loop yet from the calling thread. This must only be called
+     * from the host's GUI thread.
+     */
+    void run_pending();
+
+    /**
+     * Run the pending tasks of every `RunLoopTasks` instance in this process.
+     * This must only be called from the host's GUI thread.
+     *
+     * @see begin_host_gui_thread_wait
+     */
+    static void run_all_pending();
+
     // From `IEventHandler`, required for REAPER because its GUI is not thread
     // safe
     void PLUGIN_API onFDIsSet(Steinberg::Linux::FileDescriptor fd) override;
 
    private:
+    /**
+     * Move this instance's pending tasks to `tasks` and drain the notification
+     * socket.
+     */
+    void take_pending(std::vector<fu2::unique_function<void()>>& tasks);
+
     /**
      * This pointer is cast from `plug_frame` once `IPlugView::setFrame()` has
      * been called.
