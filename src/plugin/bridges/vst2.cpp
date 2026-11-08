@@ -533,6 +533,11 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
                                     editor_rectangle_);
 
     switch (opcode) {
+        case effVendorSpecific:
+            if (index == effGetEffectName && value == 0x50) {
+                return 0;
+            }
+            break;
         case effClose: {
             // Allow the plugin to handle its own shutdown, and then terminate
             // the process. Because terminating the Wine process will also
