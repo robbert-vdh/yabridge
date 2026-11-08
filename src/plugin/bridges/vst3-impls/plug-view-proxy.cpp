@@ -16,6 +16,38 @@
 
 #include "plug-view-proxy.h"
 
+#include <asio/post.hpp>
+
+namespace {
+
+/**
+ * Protects `run_loop_task_instances` and `gui_wait_contexts`. Locked before an
+ * instance's `tasks_mutex_`.
+ */
+std::mutex run_loop_tasks_registry_mutex;
+
+/**
+ * The thread that created the last `RunLoopTasks` instance. `RunLoopTasks` are
+ * created from `IPlugView::setFrame()`, which the host calls from its GUI
+ * thread.
+ */
+std::atomic<std::thread::id> host_gui_thread_id;
+
+/**
+ * Every live `RunLoopTasks` instance in this process.
+ */
+std::vector<RunLoopTasks*> run_loop_task_instances;
+
+/**
+ * The IO contexts of the mutually recursive calls the host's GUI thread is
+ * currently waiting in, innermost last.
+ *
+ * @see begin_host_gui_thread_wait
+ */
+std::vector<std::shared_ptr<asio::io_context>> gui_wait_contexts;
+
+}  // namespace
+
 RunLoopTasks::RunLoopTasks(Steinberg::IPtr<Steinberg::IPlugFrame> plug_frame)
     : run_loop_(plug_frame) {
     FUNKNOWN_CTOR
@@ -39,10 +71,21 @@ RunLoopTasks::RunLoopTasks(Steinberg::IPtr<Steinberg::IPlugFrame> plug_frame)
         throw std::runtime_error(
             "Failed to register an event handler with the host's run loop");
     }
+
+    std::lock_guard registry_lock(run_loop_tasks_registry_mutex);
+    run_loop_task_instances.push_back(this);
+    host_gui_thread_id = std::this_thread::get_id();
 }
 
 RunLoopTasks::~RunLoopTasks() {
     FUNKNOWN_DTOR
+
+    {
+        std::lock_guard registry_lock(run_loop_tasks_registry_mutex);
+        run_loop_task_instances.erase(std::find(run_loop_task_instances.begin(),
+                                                run_loop_task_instances.end(),
+                                                this));
+    }
 
     run_loop_->unregisterEventHandler(this);
     close(socket_read_fd_);
@@ -57,32 +100,98 @@ IMPLEMENT_FUNKNOWN_METHODS(RunLoopTasks,
 #pragma GCC diagnostic pop
 
 void RunLoopTasks::schedule(fu2::unique_function<void()> task) {
-    std::lock_guard eventfd_lock(tasks_mutex_);
-    tasks_.push_back(std::move(task));
+    // The registry lock makes this atomic with `begin_host_gui_thread_wait()`:
+    // either the task is pending when the GUI thread starts waiting, or we see
+    // the wait here
+    std::lock_guard registry_lock(run_loop_tasks_registry_mutex);
+    {
+        std::lock_guard eventfd_lock(tasks_mutex_);
+        tasks_.push_back(std::move(task));
 
-    uint8_t notify_value = 1;
-    assert(write(socket_write_fd_, &notify_value, sizeof(notify_value)) ==
-           sizeof(notify_value));
+        uint8_t notify_value = 1;
+        assert(write(socket_write_fd_, &notify_value, sizeof(notify_value)) ==
+               sizeof(notify_value));
+    }
+
+    if (!gui_wait_contexts.empty()) {
+        asio::post(*gui_wait_contexts.back(), run_all_pending);
+    }
+}
+
+void RunLoopTasks::run_pending() {
+    std::vector<fu2::unique_function<void()>> tasks;
+    take_pending(tasks);
+
+    // Run the tasks without holding the mutex: a task may schedule another task
+    // from the host's GUI thread, and we don't want to deadlock on that.
+    for (auto& task : tasks) {
+        task();
+    }
+}
+
+void RunLoopTasks::run_all_pending() {
+    std::vector<fu2::unique_function<void()>> tasks;
+    {
+        std::lock_guard registry_lock(run_loop_tasks_registry_mutex);
+        for (RunLoopTasks* instance : run_loop_task_instances) {
+            instance->take_pending(tasks);
+        }
+    }
+
+    for (auto& task : tasks) {
+        task();
+    }
+}
+
+void RunLoopTasks::take_pending(
+    std::vector<fu2::unique_function<void()>>& tasks) {
+    std::lock_guard lock(tasks_mutex_);
+    for (auto& task : tasks_) {
+        tasks.push_back(std::move(task));
+    }
+    tasks_.clear();
+
+    // There's one notification byte per scheduled task, but drain the socket
+    // completely: a leftover byte would make the host treat the socket as
+    // readable forever.
+    uint8_t notify_value;
+    while (read(socket_read_fd_, &notify_value, sizeof(notify_value)) ==
+           sizeof(notify_value)) {
+    }
 }
 
 void PLUGIN_API
 RunLoopTasks::onFDIsSet(Steinberg::Linux::FileDescriptor /*fd*/) {
-    std::lock_guard lock(tasks_mutex_);
+    run_pending();
+}
 
-    // Run all tasks that have been submitted to our queue from the host's
-    // calling thread (which will be the GUI thread)
-    for (auto& task : tasks_) {
-        task();
+bool is_host_gui_thread() {
+    return std::this_thread::get_id() == host_gui_thread_id.load();
+}
 
-        // This should in theory stop the host from calling this function, but
-        // REAPER doesn't care. And funnily enough we only have to do all of
-        // this because of REAPER.
-        uint8_t notify_value;
-        assert(read(socket_read_fd_, &notify_value, sizeof(notify_value)) ==
-               sizeof(notify_value));
+void begin_host_gui_thread_wait(
+    const std::shared_ptr<asio::io_context>& context) {
+    if (!is_host_gui_thread()) {
+        return;
     }
 
-    tasks_.clear();
+    std::lock_guard registry_lock(run_loop_tasks_registry_mutex);
+    gui_wait_contexts.push_back(context);
+
+    // Tasks scheduled before this point did not see this wait
+    asio::post(*context, RunLoopTasks::run_all_pending);
+}
+
+void end_host_gui_thread_wait(
+    const std::shared_ptr<asio::io_context>& context) {
+    // This is called from the thread that sent the message, so we can't check
+    // which thread started the wait
+    std::lock_guard registry_lock(run_loop_tasks_registry_mutex);
+    if (const auto it = std::find(gui_wait_contexts.begin(),
+                                  gui_wait_contexts.end(), context);
+        it != gui_wait_contexts.end()) {
+        gui_wait_contexts.erase(it);
+    }
 }
 
 Vst3PlugViewProxyImpl::Vst3PlugViewProxyImpl(
@@ -96,6 +205,10 @@ Vst3PlugViewProxyImpl::~Vst3PlugViewProxyImpl() noexcept {
     // NOTE: This can actually throw (e.g. out of memory or the socket got
     //       closed). But if that were to happen, then we wouldn't be able to
     //       recover from it anyways.
+    // NOTE: This also runs pending run loop tasks while we wait, which other
+    //       editors hosted by the same Wine process may be blocked on. Hosts
+    //       normally call `setFrame(nullptr)` before dropping the view, and
+    //       that already removed this view's own task queue.
     bridge_.send_mutually_recursive_message(
         Vst3PlugViewProxy::Destruct{.owner_instance_id = owner_instance_id()});
 }

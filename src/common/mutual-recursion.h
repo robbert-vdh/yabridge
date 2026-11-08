@@ -76,6 +76,31 @@ class MutualRecursionHelper {
      */
     template <std::invocable F>
     std::invoke_result_t<F> fork(F&& fn) {
+        return fork(
+            std::forward<F>(fn),
+            [](const std::shared_ptr<asio::io_context>&) {},
+            [](const std::shared_ptr<asio::io_context>&) {});
+    }
+
+    /**
+     * The same as `fork(fn)`, but with hooks that let the caller hand work to
+     * the calling thread from places other than `handle()` and
+     * `maybe_handle()`.
+     *
+     * @param fn A (blocking) function that should be called on another thread.
+     * @param on_enter Called with the IO context that will run work on the
+     *   calling thread once that context accepts work, before the calling
+     *   thread starts blocking.
+     * @param on_leave Called with that same IO context from the other thread
+     *   after `fn` returns, right before the context stops accepting work.
+     *   Anything posted to the context before this returns will still be run.
+     *
+     * @return The return value of `fn`.
+     */
+    template <std::invocable F, typename OnEnter, typename OnLeave>
+    std::invoke_result_t<F> fork(F&& fn,
+                                 OnEnter&& on_enter,
+                                 OnLeave&& on_leave) {
         using Result = std::invoke_result_t<F>;
 
         // This IO context will accept incoming calls from `handle()` and
@@ -94,6 +119,7 @@ class MutualRecursionHelper {
         // guard instead. This prevents us from accidentally cancelling any
         // outstanding tasks.
         auto work_guard = asio::make_work_guard(*current_io_context);
+        on_enter(current_io_context);
 
         // We will call the function from another thread so we can handle calls
         // to `handle()`/`maybe_handle()` from this thread
@@ -106,6 +132,7 @@ class MutualRecursionHelper {
             // the other side). By resetting the work guard we do not cancel any
             // pending tasks, but `current_io_context->run()` will stop blocking
             // eventually.
+            on_leave(current_io_context);
             std::lock_guard lock(mutual_recursion_contexts_mutex_);
             work_guard.reset();
             mutual_recursion_contexts_.erase(std::find(

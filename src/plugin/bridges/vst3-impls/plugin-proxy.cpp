@@ -51,7 +51,7 @@ Vst3PluginProxyImpl::~Vst3PluginProxyImpl() noexcept {
     // NOTE: This can actually throw (e.g. out of memory or the socket got
     //       closed). But if that were to happen, then we wouldn't be able to
     //       recover from it anyways.
-    bridge_.send_message(
+    bridge_.send_gui_thread_message(
         Vst3PluginProxy::Destruct{.instance_id = instance_id()});
     bridge_.unregister_plugin_proxy(*this);
 }
@@ -96,7 +96,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
     Steinberg::Vst::BusDirection dir,
     int32 busIndex,
     uint32 latencyInSamples) {
-    return bridge_.send_message(
+    return bridge_.send_gui_thread_message(
         YaAudioPresentationLatency::SetAudioPresentationLatencySamples{
             .instance_id = instance_id(),
             .dir = dir,
@@ -113,7 +113,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setBusArrangements(
 
     // NOTE: Ardour passes a null pointer when `numIns` or `numOuts` is 0, so we
     //       need to work around that
-    return bridge_.send_audio_processor_message(
+    return bridge_.send_gui_thread_audio_processor_message(
         YaAudioProcessor::SetBusArrangements{
             .instance_id = instance_id(),
             .inputs =
@@ -186,7 +186,7 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getLatencySamples() {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
-    return bridge_.send_audio_processor_message(
+    return bridge_.send_gui_thread_audio_processor_message(
         YaAudioProcessor::SetupProcessing{.instance_id = instance_id(),
                                           .setup = setup});
 }
@@ -206,8 +206,9 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
         }
     }
 
-    return bridge_.send_audio_processor_message(YaAudioProcessor::SetProcessing{
-        .instance_id = instance_id(), .state = state});
+    return bridge_.send_gui_thread_audio_processor_message(
+        YaAudioProcessor::SetProcessing{.instance_id = instance_id(),
+                                        .state = state});
 }
 
 tresult PLUGIN_API
@@ -265,8 +266,9 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getTailSamples() {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setAutomationState(int32 state) {
-    return bridge_.send_message(YaAutomationState::SetAutomationState{
-        .instance_id = instance_id(), .state = state});
+    return bridge_.send_gui_thread_message(
+        YaAutomationState::SetAutomationState{.instance_id = instance_id(),
+                                              .state = state});
 }
 
 tresult PLUGIN_API
@@ -290,7 +292,7 @@ Vst3PluginProxyImpl::getControllerClassId(Steinberg::TUID classId) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setIoMode(Steinberg::Vst::IoMode mode) {
-    return bridge_.send_audio_processor_message(
+    return bridge_.send_gui_thread_audio_processor_message(
         YaComponent::SetIoMode{.instance_id = instance_id(), .mode = mode});
 }
 
@@ -397,7 +399,7 @@ Vst3PluginProxyImpl::activateBus(Steinberg::Vst::MediaType type,
                                  Steinberg::Vst::BusDirection dir,
                                  int32 index,
                                  TBool state) {
-    return bridge_.send_audio_processor_message(
+    return bridge_.send_gui_thread_audio_processor_message(
         YaComponent::ActivateBus{.instance_id = instance_id(),
                                  .type = type,
                                  .dir = dir,
@@ -413,8 +415,9 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
     //       workaround of its own. Great!
     clear_bus_cache();
 
-    const SetActiveResponse response = bridge_.send_audio_processor_message(
-        YaComponent::SetActive{.instance_id = instance_id(), .state = state});
+    const SetActiveResponse response =
+        bridge_.send_gui_thread_audio_processor_message(YaComponent::SetActive{
+            .instance_id = instance_id(), .state = state});
 
     // NOTE: REAPER may (and will) change a plugin's channel layout after
     //       calling `IAudioProcessor::setupProcessing()`. Because of that, we
@@ -501,7 +504,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
     if (auto other_instance = dynamic_cast<Vst3PluginProxy*>(other)) {
         connected_instance_id_ = other_instance->instance_id();
 
-        return bridge_.send_message(
+        return bridge_.send_gui_thread_message(
             YaConnectionPoint::Connect{.instance_id = instance_id(),
                                        .other = other_instance->instance_id()});
     }
@@ -526,9 +529,10 @@ tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
             // plugin, `connected_instance_id` should now be set
             other->notify(message);
             if (connected_instance_id_) {
-                return bridge_.send_message(YaConnectionPoint::Connect{
-                    .instance_id = instance_id(),
-                    .other = *connected_instance_id_});
+                return bridge_.send_gui_thread_message(
+                    YaConnectionPoint::Connect{
+                        .instance_id = instance_id(),
+                        .other = *connected_instance_id_});
             }
         }
     }
@@ -536,7 +540,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
     // If we cannot bypass the proxy, we'll just proxy the host's proxy
     connection_point_proxy_ = other;
 
-    return bridge_.send_message(YaConnectionPoint::Connect{
+    return bridge_.send_gui_thread_message(YaConnectionPoint::Connect{
         .instance_id = instance_id(),
         .other =
             Vst3ConnectionPointProxy::ConstructArgs(other, instance_id())});
@@ -547,11 +551,11 @@ Vst3PluginProxyImpl::disconnect(IConnectionPoint* /*other*/) {
     // See `Vst3PluginProxyImpl::connect()`, if we directly connected two
     // instances we'll also disconnect them again
     if (connected_instance_id_) {
-        return bridge_.send_message(YaConnectionPoint::Disconnect{
+        return bridge_.send_gui_thread_message(YaConnectionPoint::Disconnect{
             .instance_id = instance_id(),
             .other_instance_id = *connected_instance_id_});
     } else {
-        const tresult result = bridge_.send_message(
+        const tresult result = bridge_.send_gui_thread_message(
             YaConnectionPoint::Disconnect{.instance_id = instance_id(),
                                           .other_instance_id = std::nullopt});
         connection_point_proxy_.reset();
@@ -574,7 +578,7 @@ Vst3PluginProxyImpl::notify(Steinberg::Vst::IMessage* message) {
     // so we don't have to do any additional when those objects pass through
     // messages.
     if (auto message_ptr = dynamic_cast<YaMessagePtr*>(message)) {
-        return bridge_.send_message(YaConnectionPoint::Notify{
+        return bridge_.send_gui_thread_message(YaConnectionPoint::Notify{
             .instance_id = instance_id(), .message_ptr = *message_ptr});
     }
 
@@ -612,8 +616,9 @@ Vst3PluginProxyImpl::notify(Steinberg::Vst::IMessage* message) {
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
     if (state) {
-        return bridge_.send_message(YaEditController::SetComponentState{
-            .instance_id = instance_id(), .state = state});
+        return bridge_.send_gui_thread_message(
+            YaEditController::SetComponentState{.instance_id = instance_id(),
+                                                .state = state});
     } else {
         bridge_.logger_.log(
             "WARNING: Null pointer passed to "
@@ -752,11 +757,12 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
         unit_handler_ = component_handler_;
         unit_handler_2_ = component_handler_;
 
-        return bridge_.send_message(YaEditController::SetComponentHandler{
-            .instance_id = instance_id(),
-            .component_handler_proxy_args =
-                Vst3ComponentHandlerProxy::ConstructArgs(component_handler_,
-                                                         instance_id())});
+        return bridge_.send_gui_thread_message(
+            YaEditController::SetComponentHandler{
+                .instance_id = instance_id(),
+                .component_handler_proxy_args =
+                    Vst3ComponentHandlerProxy::ConstructArgs(component_handler_,
+                                                             instance_id())});
     } else {
         component_handler_ = nullptr;
 
@@ -767,9 +773,10 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
         unit_handler_ = nullptr;
         unit_handler_2_ = nullptr;
 
-        return bridge_.send_message(YaEditController::SetComponentHandler{
-            .instance_id = instance_id(),
-            .component_handler_proxy_args = std::nullopt});
+        return bridge_.send_gui_thread_message(
+            YaEditController::SetComponentHandler{
+                .instance_id = instance_id(),
+                .component_handler_proxy_args = std::nullopt});
     }
 }
 
@@ -777,7 +784,7 @@ Steinberg::IPlugView* PLUGIN_API
 Vst3PluginProxyImpl::createView(Steinberg::FIDString name) {
     if (name) {
         CreateViewResponse response =
-            bridge_.send_message(YaEditController::CreateView{
+            bridge_.send_gui_thread_message(YaEditController::CreateView{
                 .instance_id = instance_id(), .name = name});
 
         if (response.plug_view_args) {
@@ -809,12 +816,12 @@ Vst3PluginProxyImpl::setKnobMode(Steinberg::Vst::KnobMode mode) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::openHelp(TBool onlyCheck) {
-    return bridge_.send_message(YaEditController2::OpenHelp{
+    return bridge_.send_gui_thread_message(YaEditController2::OpenHelp{
         .instance_id = instance_id(), .only_check = onlyCheck});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
-    return bridge_.send_message(YaEditController2::OpenAboutBox{
+    return bridge_.send_gui_thread_message(YaEditController2::OpenAboutBox{
         .instance_id = instance_id(), .only_check = onlyCheck});
 }
 
@@ -881,7 +888,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::onLiveMIDIControllerInput(
     int32 busIndex,
     int16 channel,
     Steinberg::Vst::CtrlNumber midiCC) {
-    return bridge_.send_message(
+    return bridge_.send_gui_thread_message(
         YaMidiLearn::OnLiveMIDIControllerInput{.instance_id = instance_id(),
                                                .bus_index = busIndex,
                                                .channel = channel,
@@ -1039,7 +1046,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
         plug_interface_support_ = host_context_;
 
         InitializeResponse response =
-            bridge_.send_message(Vst3PluginProxy::Initialize{
+            bridge_.send_gui_thread_message(Vst3PluginProxy::Initialize{
                 .instance_id = instance_id(),
                 .host_context_args = Vst3HostContextProxy::ConstructArgs(
                     host_context_, instance_id())});
@@ -1059,7 +1066,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {
-    return bridge_.send_message(
+    return bridge_.send_gui_thread_message(
         YaPluginBase::Terminate{.instance_id = instance_id()});
 }
 
@@ -1092,7 +1099,7 @@ Vst3PluginProxyImpl::getProgramData(Steinberg::Vst::ProgramListID listId,
                                     int32 programIndex,
                                     Steinberg::IBStream* data) {
     if (data) {
-        const GetProgramDataResponse response = bridge_.send_message(
+        const GetProgramDataResponse response = bridge_.send_gui_thread_message(
             YaProgramListData::GetProgramData{.instance_id = instance_id(),
                                               .list_id = listId,
                                               .program_index = programIndex,
@@ -1114,7 +1121,7 @@ Vst3PluginProxyImpl::setProgramData(Steinberg::Vst::ProgramListID listId,
                                     int32 programIndex,
                                     Steinberg::IBStream* data) {
     if (data) {
-        return bridge_.send_message(
+        return bridge_.send_gui_thread_message(
             YaProgramListData::SetProgramData{.instance_id = instance_id(),
                                               .list_id = listId,
                                               .program_index = programIndex,
@@ -1138,7 +1145,7 @@ Vst3PluginProxyImpl::getUnitData(Steinberg::Vst::UnitID unitId,
                                  Steinberg::IBStream* data) {
     if (data) {
         const GetUnitDataResponse response =
-            bridge_.send_message(YaUnitData::GetUnitData{
+            bridge_.send_gui_thread_message(YaUnitData::GetUnitData{
                 .instance_id = instance_id(), .unit_id = unitId, .data = data});
 
         assert(response.data.write_back(data) == Steinberg::kResultOk);
@@ -1155,7 +1162,7 @@ tresult PLUGIN_API
 Vst3PluginProxyImpl::setUnitData(Steinberg::Vst::UnitID unitId,
                                  Steinberg::IBStream* data) {
     if (data) {
-        return bridge_.send_message(YaUnitData::SetUnitData{
+        return bridge_.send_gui_thread_message(YaUnitData::SetUnitData{
             .instance_id = instance_id(), .unit_id = unitId, .data = data});
     } else {
         bridge_.logger_.log(
@@ -1283,7 +1290,7 @@ Steinberg::Vst::UnitID PLUGIN_API Vst3PluginProxyImpl::getSelectedUnit() {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::selectUnit(Steinberg::Vst::UnitID unitId) {
-    return bridge_.send_message(YaUnitInfo::SelectUnit{
+    return bridge_.send_gui_thread_message(YaUnitInfo::SelectUnit{
         .instance_id = instance_id(), .unit_id = unitId});
 }
 
@@ -1328,7 +1335,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
     Steinberg::IBStream* stream /*out*/) {
     if (stream) {
         const GetXmlRepresentationStreamResponse response =
-            bridge_.send_message(
+            bridge_.send_gui_thread_message(
                 YaXmlRepresentationController::GetXmlRepresentationStream{
                     .instance_id = instance_id(),
                     .info = info,
