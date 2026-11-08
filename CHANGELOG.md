@@ -8,6 +8,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Breaking changes
+
+- Yabridgectl now respects the `LXVST_PATH`, `VST_PATH`, and `VST3_PATH`
+  environment variables to determine where to place its VST2 and VST3 plugin
+  files. If those environment variables are set, then the next `yabridgectl sync`
+  run after upgrading yabridge may result in old leftover plugin files in
+  `~/.vst/yabridge` or `~/.vst3/yabridge` that need to be manually removed.
+
 ### Fixed
 
 - Fixed a compatibility issue with **Wine 9.22** and above that caused mouse
@@ -50,6 +58,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- Yabridgectl now respects `LXVST_PATH`, `VST_PATH`, and `VST3_PATH` environment
+  variables to determine where to place its VST2 and VST3 plugin files
+  ([#306](https://github.com/robbert-vdh/yabridge/pull/306)).
 - Fixed a regression that caused `yabridgectl set --path-auto` to no longer
   work.
 
