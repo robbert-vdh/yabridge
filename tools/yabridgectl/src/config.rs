@@ -102,10 +102,12 @@ pub struct Config {
 /// files.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum Vst2InstallationLocation {
     /// Set up the plugins in `~/.vst/yabridge`. The downside of this approach is that you cannot
     /// have multiple plugins with the same name being provided by multiple directories or prefixes.
     /// That might be useful for debugging purposes.
+    #[default]
     Centralized,
     /// Create the `.so` files right next to the original VST2 plugins.
     Inline,
@@ -161,12 +163,6 @@ pub struct YabridgeFiles {
     /// The same as `yabridge_host_exe_so`, but for the 32-bit verison. We will hash this instead of
     /// there's no 64-bit version available.
     pub yabridge_host_32_exe_so: Option<PathBuf>,
-}
-
-impl Default for Vst2InstallationLocation {
-    fn default() -> Self {
-        Vst2InstallationLocation::Centralized
-    }
 }
 
 impl Config {
