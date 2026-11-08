@@ -108,6 +108,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- The Rust workspace for yabridgectl is now defined in the repo's root rather
+  than in `tools/yabridgectl`, so both the `Cargo.lock` file and the `target`
+  directory the compiled binaries end up in are now located at the repo's root
+  rather than in `tools/yabridgectl`.
 - This release includes a workaround to make bitsery compile with GCC 13 due to
   changes in transitive header includes.
 - The CLAP dependency has been updated to target version 1.1.9 (revision version
