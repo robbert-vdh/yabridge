@@ -18,9 +18,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed VST3 plugins potentially freezing in **Bitwig Studio** when a parameter
-  edit starts while Bitwig requests the plugin's state
-  ([#504](https://github.com/robbert-vdh/yabridge/issues/504)).
 - Fixed a compatibility issue with **Wine 9.22** and above that caused mouse
   clicks in plugin GUIs to not register properly. A massive thanks to
   [@rbernon](https://github.com/rbernon),
@@ -31,6 +28,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   **Ardour** that would cause yabridge to hang and eventually crash the host by
   consuming too much memory. This only affected the prebuilt binaries from the
   releases page.
+- Fixed VST3 plugins potentially freezing in **Bitwig Studio** when interacting
+  with parameters while the plugin's state was being saved
+  ([#505](https://github.com/robbert-vdh/yabridge/pull/505)).
 - Fixed an issue where **REAPER** could crash with a `BadWindow` X11 error when
   quickly switching between plugin editors
   ([#531](https://github.com/robbert-vdh/yabridge/pull/531)) This was easy to
