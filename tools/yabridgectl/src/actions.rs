@@ -25,9 +25,9 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::config::{
-    yabridge_clap_home, yabridge_vst2_home, yabridge_vst3_home, Config, Vst2InstallationLocation,
-    YabridgeFiles, CLAP_CHAINLOADER_NAME, VST2_CHAINLOADER_NAME, VST3_CHAINLOADER_NAME,
-    YABRIDGE_HOST_32_EXE_NAME, YABRIDGE_HOST_EXE_NAME,
+    CLAP_CHAINLOADER_NAME, Config, VST2_CHAINLOADER_NAME, VST3_CHAINLOADER_NAME,
+    Vst2InstallationLocation, YABRIDGE_HOST_32_EXE_NAME, YABRIDGE_HOST_EXE_NAME, YabridgeFiles,
+    yabridge_clap_home, yabridge_vst2_home, yabridge_vst3_home,
 };
 use crate::files::{self, ClapPlugin, NativeFile, Plugin, Vst2Plugin};
 use crate::util::{self, get_file_type};

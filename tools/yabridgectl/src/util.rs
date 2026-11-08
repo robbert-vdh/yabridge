@@ -16,7 +16,7 @@
 
 //! Helper utilities and wrappers around filesystem functions for use with anyhow.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use colored::Colorize;
 use is_executable::IsExecutable;
 use std::collections::hash_map::DefaultHasher;

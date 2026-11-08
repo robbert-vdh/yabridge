@@ -16,7 +16,7 @@
 
 use anyhow::Result;
 use clap::builder::TypedValueParser;
-use clap::{command, value_parser, Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, command, value_parser};
 use colored::Colorize;
 use std::collections::HashSet;
 use std::env;
@@ -36,13 +36,16 @@ fn main() -> Result<()> {
     // We'll modify our `PATH` environment variable so it matches up with
     // `get_augmented_search_path()` from `src/plugin/utils.h` for easier setup
     let yabridge_home = config::yabridge_directories()?.get_data_home();
-    env::set_var(
-        "PATH",
-        match env::var("PATH") {
-            Ok(path) => format!("{}:{}", path, yabridge_home.display()),
-            _ => format!("{}", yabridge_home.display()),
-        },
-    );
+    // SAFETY: No threads have been spawned yet, so it is safe to modify environment variables.
+    unsafe {
+        env::set_var(
+            "PATH",
+            match env::var("PATH") {
+                Ok(path) => format!("{}:{}", path, yabridge_home.display()),
+                _ => format!("{}", yabridge_home.display()),
+            },
+        )
+    };
 
     let mut config = Config::read()?;
 

@@ -24,7 +24,7 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::config::{
-    yabridge_clap_home, yabridge_vst2_home, yabridge_vst3_home, Config, YabridgeFiles,
+    Config, YabridgeFiles, yabridge_clap_home, yabridge_vst2_home, yabridge_vst3_home,
 };
 use crate::symbols::parse_pe32_binary;
 use crate::util::get_file_type;
@@ -226,11 +226,7 @@ impl Vst3Module {
             Vst3ModuleType::Bundle(bundle_home) => {
                 let mut path = bundle_home.join("Contents");
                 path.push("Resources");
-                if path.exists() {
-                    Some(path)
-                } else {
-                    None
-                }
+                if path.exists() { Some(path) } else { None }
             }
             Vst3ModuleType::Legacy(_) => None,
         }
@@ -244,11 +240,7 @@ impl Vst3Module {
             Vst3ModuleType::Bundle(bundle_home) => {
                 let mut path = bundle_home.join("Contents");
                 path.push("moduleinfo.json");
-                if path.exists() {
-                    Some(path)
-                } else {
-                    None
-                }
+                if path.exists() { Some(path) } else { None }
             }
             Vst3ModuleType::Legacy(_) => None,
         }
@@ -522,11 +514,7 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
                 Err(err) => err.path()?.to_owned(),
             };
 
-            if !path.is_dir() {
-                Some(path)
-            } else {
-                None
-            }
+            if !path.is_dir() { Some(path) } else { None }
         })
         .enumerate()
     {
