@@ -313,16 +313,16 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // Before doing anything, make sure `~/.{clap,vst,vst3}/yabridge` are not symlinks to one of the
     // plugin directories. See
     // https://github.com/robbert-vdh/yabridge/issues/185#issuecomment-1166274104.
-    let bail_if_unsafe_symlink = |plugin_home: &Path, plugin_home_display| {
+    let bail_if_unsafe_symlink = |plugin_home: &Path| {
         if let Ok(canonical_plugin_home) = fs::canonicalize(&plugin_home) {
             if canonical_plugin_home != plugin_home {
                 for plugin_dir in &config.plugin_dirs {
                     if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
                         if canonical_plugin_dir.starts_with(&canonical_plugin_home) {
                             anyhow::bail!(
-                                "'{plugin_home_display}' is a symlink to '{}'. This conflicts \
-                                 with '{}' from your plugin directories, so the syncing process \
-                                 will now be aborted.",
+                                "'{}' is a symlink to '{}'. This conflicts with '{}' from your \
+                                 plugin directories, so the syncing process will now be aborted.",
+                                plugin_home.display(),
                                 canonical_plugin_home.display(),
                                 plugin_dir.display(),
                             );
@@ -338,9 +338,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let vst2_home = yabridge_vst2_home();
     let vst3_home = yabridge_vst3_home();
     let clap_home = yabridge_clap_home();
-    bail_if_unsafe_symlink(&vst2_home, "~/.vst/yabridge")?;
-    bail_if_unsafe_symlink(&vst3_home, "~/.vst3/yabridge")?;
-    bail_if_unsafe_symlink(&clap_home, "~/.clap/yabridge")?;
+    bail_if_unsafe_symlink(&vst2_home)?;
+    bail_if_unsafe_symlink(&vst3_home)?;
+    bail_if_unsafe_symlink(&clap_home)?;
 
     // Keep track of some global statistics
     // The plugin files we installed. This tracks copies of/symlinks to `libabyrdge-*.so` managed.
