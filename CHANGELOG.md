@@ -44,6 +44,21 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   sides of the screen.
 - Similarly, popups should no longer spuriously appear in the wrong placeo n
   screen. This mostly affected _MeldaProduction_ plugin
+- Fixed yabridge aborting the host when the host ignores `SIGCHLD`, like
+  _Element_ does. In that case child processes are reaped automatically and
+  `waitpid()` fails with `ECHILD`, which yabridge used to treat as a fatal
+  error.
+- Fixed audio dropouts and frozen plugin GUIs in **REAPER** when using VST2
+  plugins. REAPER asks every VST2 plugin for its current gain reduction from the
+  audio thread once per processing cycle. yabridge forwarded those queries to
+  the Wine plugin host's GUI thread, so the audio thread had to wait whenever the
+  plugin's GUI was busy. yabridge now answers these queries directly for plugins
+  that don't support PreSonus' gain reduction API.
+- The host no longer crashes when a Wine plugin host dies while the plugin is
+  still in use. Instead, yabridge shows a notification and the plugin outputs
+  silence until it is removed. VST2 plugins can simply be re-added, but VST3
+  plugins can only be restarted by restarting the host since the module stays
+  loaded.
 
 ### Removed
 

@@ -46,7 +46,7 @@ class YaProgress : public Steinberg::Vst::IProgress {
         /**
          * Whether the object supported this interface.
          */
-        bool supported;
+        bool supported = false;
 
         template <typename S>
         void serialize(S& s) {

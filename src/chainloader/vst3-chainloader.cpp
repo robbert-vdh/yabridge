@@ -89,17 +89,20 @@ bool initialize_library() {
         return true;
     }
 
-    library_handle = find_plugin_library(yabridge_vst3_plugin_name);
-    if (!library_handle) {
+    // The handle is only stored once every function has been found. Otherwise
+    // a later call would report success with some of them still null.
+    void* handle = find_plugin_library(yabridge_vst3_plugin_name);
+    if (!handle) {
         return false;
     }
 
 #define LOAD_FUNCTION(name)                                                 \
     do {                                                                    \
         (name) =                                                            \
-            reinterpret_cast<decltype(name)>(dlsym(library_handle, #name)); \
+            reinterpret_cast<decltype(name)>(dlsym(handle, #name));         \
         if (!(name)) {                                                      \
             log_failing_dlsym(yabridge_vst3_plugin_name, #name);            \
+            dlclose(handle);                                                \
             return false;                                                   \
         }                                                                   \
     } while (false)
@@ -112,9 +115,11 @@ bool initialize_library() {
     // yabridge version
     remote_yabridge_version =
         reinterpret_cast<decltype(remote_yabridge_version)>(
-            dlsym(library_handle, "yabridge_version"));
+            dlsym(handle, "yabridge_version"));
 
 #undef LOAD_FUNCTION
+
+    library_handle = handle;
 
     return true;
 }
@@ -123,17 +128,28 @@ extern "C" YABRIDGE_EXPORT bool ModuleEntry(void*) {
     // This function can be called multiple times, so we should make sure to
     // only initialize the bridge on the first call
     if (active_instances.fetch_add(1, std::memory_order_seq_cst) == 0) {
-        if (!initialize_library()) {
-            return false;
-        }
+        try {
+            // On failure the count is rolled back, or the next call would
+            // report success without a bridge
+            if (!initialize_library()) {
+                active_instances.fetch_sub(1, std::memory_order_seq_cst);
+                return false;
+            }
 
-        // You can't change the deleter function with `.reset()` so we'll need
-        // this abomination instead
-        const fs::path this_plugin_path = get_this_file_location();
-        bridge =
-            decltype(bridge)(yabridge_module_init(this_plugin_path.c_str()),
-                             yabridge_module_free);
-        if (!bridge) {
+            // You can't change the deleter function with `.reset()` so we'll
+            // need this abomination instead
+            const fs::path this_plugin_path = get_this_file_location();
+            bridge =
+                decltype(bridge)(yabridge_module_init(this_plugin_path.c_str()),
+                                 yabridge_module_free);
+            if (!bridge) {
+                active_instances.fetch_sub(1, std::memory_order_seq_cst);
+                return false;
+            }
+        } catch (...) {
+            // Do not let an exception escape the C entry point, and roll back
+            // the instance count as well.
+            active_instances.fetch_sub(1, std::memory_order_seq_cst);
             return false;
         }
     }
@@ -152,10 +168,17 @@ extern "C" YABRIDGE_EXPORT bool ModuleExit() {
 }
 
 extern "C" YABRIDGE_EXPORT PluginFactory* GetPluginFactory() {
-    // The host should have called `InitModule()` first
-    assert(bridge);
+    // The host should have called `InitModule()` first, and that may have
+    // failed
+    if (!bridge) {
+        return nullptr;
+    }
 
-    return yabridge_module_get_plugin_factory(bridge.get());
+    try {
+        return yabridge_module_get_plugin_factory(bridge.get());
+    } catch (...) {
+        return nullptr;
+    }
 }
 
 /**
@@ -165,9 +188,13 @@ extern "C" YABRIDGE_EXPORT PluginFactory* GetPluginFactory() {
  * rebuilt on every git commit in development.
  */
 extern "C" YABRIDGE_EXPORT const char* yabridge_version() {
-    if (!initialize_library() || !remote_yabridge_version) {
+    try {
+        if (!initialize_library() || !remote_yabridge_version) {
+            return nullptr;
+        }
+
+        return remote_yabridge_version();
+    } catch (...) {
         return nullptr;
     }
-
-    return remote_yabridge_version();
 }

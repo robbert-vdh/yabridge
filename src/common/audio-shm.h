@@ -140,12 +140,24 @@ class AudioShmBuffer {
      */
     void resize(const Config& new_config);
 
+    /**
+     * The number of channels the plugin has for this input bus, or 0 if the
+     * plugin doesn't have that bus. Hosts sometimes pass more buses than the
+     * plugin asked for.
+     */
     inline size_t num_input_channels(const uint32_t bus) const {
-        return config_.input_offsets[bus].size();
+        return bus < config_.input_offsets.size()
+                   ? config_.input_offsets[bus].size()
+                   : 0;
     }
 
+    /**
+     * The same as `num_input_channels()`, but for output buses.
+     */
     inline size_t num_output_channels(const uint32_t bus) const {
-        return config_.output_offsets[bus].size();
+        return bus < config_.output_offsets.size()
+                   ? config_.output_offsets[bus].size()
+                   : 0;
     }
 
     /**

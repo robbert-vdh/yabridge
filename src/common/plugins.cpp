@@ -16,6 +16,7 @@
 
 #include "plugins.h"
 
+#include <cstring>
 #include <fstream>
 #include <sstream>
 
@@ -23,27 +24,40 @@ namespace fs = ghc::filesystem;
 
 LibArchitecture find_dll_architecture(const fs::path& plugin_path) {
     std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);
+    const auto invalid_dll = [&]() {
+        return std::runtime_error("'" + plugin_path.string() +
+                                  "' is not a valid .dll file");
+    };
+    if (!file) {
+        throw std::runtime_error("Could not open '" + plugin_path.string() +
+                                 "'");
+    }
 
     // The linker will place the offset where the PE signature is placed at the
     // end of the MS-DOS stub, at offset 0x3c
-    uint32_t pe_signature_offset;
+    uint32_t pe_signature_offset = 0;
     file.seekg(0x3c);
     file.read(reinterpret_cast<char*>(&pe_signature_offset),
               sizeof(pe_signature_offset));
 
     // The PE32 signature will be followed by a magic number that indicates the
-    // target architecture of the binary
-    uint32_t pe_signature;
-    uint16_t machine_type;
+    // target architecture of the binary. A truncated or unreadable file fails
+    // one of these reads, which leaves the stream in a failed state.
+    uint32_t pe_signature = 0;
+    uint16_t machine_type = 0;
     file.seekg(pe_signature_offset);
     file.read(reinterpret_cast<char*>(&pe_signature), sizeof(pe_signature));
     file.read(reinterpret_cast<char*>(&machine_type), sizeof(machine_type));
+    if (!file) {
+        throw invalid_dll();
+    }
 
     constexpr char expected_pe_signature[4] = {'P', 'E', '\0', '\0'};
-    if (pe_signature !=
-        *reinterpret_cast<const uint32_t*>(expected_pe_signature)) {
-        throw std::runtime_error("'" + plugin_path.string() +
-                                 "' is not a valid .dll file");
+    uint32_t expected_pe_signature_value;
+    std::memcpy(&expected_pe_signature_value, expected_pe_signature,
+                sizeof(expected_pe_signature_value));
+    if (pe_signature != expected_pe_signature_value) {
+        throw invalid_dll();
     }
 
     // These constants are specified in

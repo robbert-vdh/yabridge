@@ -46,8 +46,7 @@ Vst3HostContextProxyImpl::getName(Steinberg::Vst::String128 name) {
             bridge_.send_message(YaHostApplication::GetName{
                 .owner_instance_id = owner_instance_id()});
 
-        std::copy(response.name.begin(), response.name.end(), name);
-        name[response.name.size()] = 0;
+        copy_to_string128(response.name, name);
 
         return response.result;
     } else {

@@ -454,14 +454,14 @@ template <
 Vst2EventResult passthrough_event(AEffect* plugin,
                                   F&& callback,
                                   Vst2Event& event) {
-    // This buffer is used to write strings and small objects to. We'll
-    // initialize the beginning with null values to both prevent it from being
-    // read as some arbitrary C-style string, and to make sure that
+    // This buffer is used to write strings and small objects to. Zero
+    // initializing it both prevents it from being read as some arbitrary
+    // C-style string (including when a plugin writes a string without a null
+    // terminator), and makes sure that
     // `*static_cast<void**>(string_buffer.data)` will be a null pointer if the
     // plugin is supposed to write a pointer there but doesn't (such as with
     // `effEditGetRect`/`WantsVstRect`).
-    std::array<char, max_string_length> string_buffer;
-    std::fill(string_buffer.begin(), string_buffer.begin() + sizeof(size_t), 0);
+    std::array<char, max_string_length> string_buffer{};
 
     auto read_payload_fn = overload{
         [](const std::nullptr_t&) -> void* { return nullptr; },

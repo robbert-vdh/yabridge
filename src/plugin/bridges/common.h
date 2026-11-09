@@ -16,8 +16,13 @@
 
 #pragma once
 
+#include <atomic>
 #include <future>
 #include <iomanip>
+#include <memory>
+#include <stdexcept>
+#include <string_view>
+#include <vector>
 
 #include <sys/resource.h>
 
@@ -47,6 +52,29 @@ constexpr int memlock_min_safe_threshold = 256 << 20;
  * limit is not unlimited (`-1`/`RLIM_INFINITY`) and below this value.
  */
 constexpr int rttime_min_safe_threshold = 30'000'000;
+
+/**
+ * Whether a socket error means that the Wine plugin host can no longer be
+ * reached, either because the process died or because the sockets have already
+ * been closed on our side.
+ *
+ * A refused or missing ad-hoc socket only gets here after the first message
+ * went through: before that `AdHocSocketHandler::send()` falls back to the
+ * primary socket, and the other side creates its ad-hoc acceptor before it
+ * answers anything. After that point either error means the Wine host is gone
+ * (`ENOENT` once the socket file is gone).
+ */
+inline bool is_connection_lost(const std::error_code& error) noexcept {
+    return error == asio::error::eof || error == asio::error::broken_pipe ||
+           error == std::errc::no_such_file_or_directory ||
+           error == asio::error::operation_aborted ||
+           error == asio::error::connection_reset ||
+           error == asio::error::connection_aborted ||
+           error == asio::error::connection_refused ||
+           error == asio::error::not_connected ||
+           error == asio::error::bad_descriptor ||
+           error == asio::error::shut_down;
+}
 
 /**
  * Handles all common operations for hosting plugins such as initializing up the
@@ -129,9 +157,61 @@ class PluginBridge {
               io_context_.run();
           }) {}
 
-    virtual ~PluginBridge() noexcept = default;
+    virtual ~PluginBridge() noexcept {
+        // The IO context thread may still be blocked on an asynchronous read
+        // from the Wine process' STDOUT/STDERR pipes when a derived constructor
+        // throws. Stopping the context here ensures that the member's `join()`
+        // cannot hang. Derived destructors also call this on the normal path.
+        io_context_.stop();
+    }
+
+    /**
+     * Whether we lost the connection to the Wine plugin host. After this the
+     * plugin no longer does anything, but the host application keeps running.
+     *
+     * @see with_live_host
+     */
+    bool host_died() const noexcept {
+        return host_died_.load(std::memory_order_relaxed);
+    }
 
    protected:
+    /**
+     * Run `fn`, which communicates with the Wine plugin host. If the host is
+     * already known to be dead, or if `fn` fails because the connection to the
+     * host was lost, then this returns `false` instead of throwing. Previously
+     * that exception would escape a plugin API function, which terminates the
+     * host application and takes the user's unsaved work with it. Any other
+     * exception is rethrown.
+     *
+     * @return Whether `fn` ran to completion.
+     */
+    template <std::invocable F>
+    bool with_live_host(F&& fn) {
+        if (host_died()) [[unlikely]] {
+            return false;
+        }
+
+        try {
+            std::forward<F>(fn)();
+            return true;
+        } catch (const std::system_error& error) {
+            // An exception escaping a plugin API function would terminate the
+            // host application. Treat all communication errors the same way,
+            // even if the error code does not look like a lost connection.
+            mark_host_died(error.what(), is_connection_lost(error.code()));
+            return false;
+        } catch (const std::exception& error) {
+            // A failed deserialization or a broken protocol stream also means
+            // that the connection can no longer be used. Letting the exception
+            // escape a plugin API function would terminate the host
+            // application.
+            mark_host_died(error.what(), false);
+            return false;
+        }
+    }
+
+
     /**
      * Format and log all relevant debug information during initialization.
      */
@@ -355,30 +435,31 @@ class PluginBridge {
     }
 
     /**
-     * Connect the sockets, while starting another thread that will terminate
-     * the plugin (through `std::terminate`/SIGABRT) when the host process fails
-     * to start. This is the only way to stop listening on our sockets without
-     * moving everything over to asynchronous listeners (which may actually be a
-     * good idea just for this use case). Otherwise the plugin would be stuck
-     * loading indefinitely when Wine is not configured correctly.
+     * Connect the sockets, while starting another thread that watches whether
+     * the host process is still running. If the Wine process fails to start
+     * or exits before it connected, then nothing will ever connect to our
+     * sockets and we would be hanging here indefinitely. This used to be
+     * solved by terminating the whole host application through
+     * `std::terminate()`. Instead the watchdog now unblocks the pending
+     * accepts by connecting to the sockets itself, after which this function
+     * throws so the plugin simply fails to load.
      *
-     * TODO: Asynchronously connect our sockets so we can interrupt it, maybe
+     * @throw std::runtime_error If the Wine host exited before connecting.
      */
     void connect_sockets_guarded() {
 #ifndef WITH_WINEDBG
-        // If the Wine process fails to start, then nothing will connect to the
-        // sockets and we'll be hanging here indefinitely. To prevent this,
-        // we'll periodically poll whether the Wine process is still running,
-        // and throw when it is not. The alternative would be to rewrite this to
-        // using `async_accept`, Asio timers, and another IO context, but
-        // I feel like this a much simpler solution.
-        host_watchdog_handler_ = std::jthread([&](std::stop_token st) {
+        // Captured by value: the watchdog may outlive this function when
+        // `sockets_.connect()` throws.
+        auto host_exited = std::make_shared<std::atomic_bool>(false);
+        host_watchdog_handler_ = std::jthread([&, host_exited](
+                                                  std::stop_token st) {
             using namespace std::literals::chrono_literals;
 
             pthread_setname_np(pthread_self(), "watchdog");
 
             while (!st.stop_requested()) {
                 if (!plugin_host_->running()) {
+                    host_exited->store(true, std::memory_order_relaxed);
                     generic_logger_.log(
                         "The Wine host process has exited unexpectedly. Check "
                         "the output above for more information.");
@@ -393,7 +474,33 @@ class PluginBridge {
                         "see the error.",
                         info_.native_library_path_);
 
-                    std::terminate();
+                    // There's no clean way to interrupt a blocking `accept()`
+                    // from another thread, but a connection of our own
+                    // completes it. Every socket we listen on is already bound
+                    // in the socket directory at this point, so one connection
+                    // to each of them lets `sockets_.connect()` return. These
+                    // sockets stay open until the main thread stops us.
+                    asio::io_context io_context{};
+                    std::vector<asio::local::stream_protocol::socket>
+                        unblocking_sockets{};
+                    std::error_code err;
+                    for (const auto& entry : ghc::filesystem::directory_iterator(
+                             sockets_.base_dir_, err)) {
+                        if (entry.path().extension() != ".sock") {
+                            continue;
+                        }
+
+                        auto& socket = unblocking_sockets.emplace_back(io_context);
+                        socket.connect(asio::local::stream_protocol::endpoint(
+                                           entry.path().string()),
+                                       err);
+                    }
+
+                    while (!st.stop_requested()) {
+                        std::this_thread::sleep_for(20ms);
+                    }
+
+                    return;
                 }
 
                 std::this_thread::sleep_for(20ms);
@@ -401,9 +508,28 @@ class PluginBridge {
         });
 #endif
 
-        sockets_.connect();
 #ifndef WITH_WINEDBG
+        try {
+            sockets_.connect();
+        } catch (...) {
+            // The watchdog would otherwise keep running until the bridge gets
+            // destroyed, and it may try to write to `host_exited` after this
+            // stack frame is gone.
+            host_watchdog_handler_.request_stop();
+            host_watchdog_handler_.join();
+            throw;
+        }
+
         host_watchdog_handler_.request_stop();
+        host_watchdog_handler_.join();
+
+        if (host_exited->load(std::memory_order_relaxed)) {
+            throw std::runtime_error(
+                "The Wine plugin host exited before it could connect to the "
+                "plugin");
+        }
+#else
+        sockets_.connect();
 #endif
     }
 
@@ -473,6 +599,69 @@ class PluginBridge {
     std::unique_ptr<HostProcess> plugin_host_;
 
    private:
+    /**
+     * Called by `with_live_host()` the first time we notice that the Wine
+     * plugin host can no longer be reached. This may happen on the audio
+     * thread, so the desktop notification is sent from another thread.
+     */
+    void mark_host_died(std::string_view reason,
+                        bool connection_lost) noexcept {
+        if (host_died_.exchange(true)) {
+            return;
+        }
+
+        try {
+            const std::string restart_hint =
+                info_.plugin_type_ == PluginType::vst3
+                    ? "Restart the host application to restart it."
+                    : "Reload the project or re-add the plugin to restart it.";
+
+            generic_logger_.log("");
+            generic_logger_.log(
+                connection_lost
+                    ? "Lost the connection to the Wine plugin host (" +
+                          std::string(reason) + ")."
+                    : "The plugin can no longer communicate with the Wine "
+                      "plugin host (" +
+                          std::string(reason) + ").");
+            generic_logger_.log(
+                "The plugin will output silence and ignore all further "
+                "calls. " +
+                restart_hint);
+            generic_logger_.log("");
+
+            host_died_notifier_ =
+                std::jthread([origin = info_.native_library_path_, restart_hint,
+                              connection_lost]() {
+                    pthread_setname_np(pthread_self(), "host-died");
+
+                    send_notification(
+                        connection_lost
+                            ? "The Wine plugin host has stopped"
+                            : "The yabridge plugin has been disabled",
+                        "This plugin will output silence until it is "
+                        "restarted, and its state can no longer be saved. " +
+                            restart_hint,
+                        origin);
+                });
+        } catch (...) {
+            // Logging is best effort, the plugin has to keep going either way
+        }
+    }
+
+    /**
+     * Set by `mark_host_died()`.
+     *
+     * @see host_died
+     */
+    std::atomic_bool host_died_ = false;
+
+    /**
+     * Sends the desktop notification from `mark_host_died()`. Joined when the
+     * bridge gets destroyed.
+     */
+    std::jthread host_died_notifier_;
+
     /**
      * The promise belonging to `has_realtime_priority_` below.
      */

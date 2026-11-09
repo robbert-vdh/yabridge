@@ -17,6 +17,7 @@
 #include "linking.h"
 
 #include <cassert>
+#include <stdexcept>
 
 #include <dlfcn.h>
 
@@ -30,9 +31,12 @@ fs::path get_this_file_location() {
     // chainloaders.
 
     // On success this returns a non-zero value, just to keep you on your toes
-    Dl_info info;
-    assert(dladdr(reinterpret_cast<void*>(get_this_file_location), &info) != 0);
-    assert(info.dli_fname);
+    Dl_info info{};
+    if (dladdr(reinterpret_cast<void*>(get_this_file_location), &info) == 0 ||
+        !info.dli_fname) {
+        throw std::runtime_error(
+            "Could not determine the location of the yabridge library");
+    }
 
     std::string this_file(info.dli_fname);
 

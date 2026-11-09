@@ -95,8 +95,9 @@ void log_init_error(const std::exception& error, const fs::path& plugin_path) {
 bool InitModule() {
     assert(!bridge);
 
-    const fs::path plugin_path = get_this_file_location();
+    fs::path plugin_path;
     try {
+        plugin_path = get_this_file_location();
         bridge = std::make_unique<Vst3PluginBridge>(plugin_path);
 
         return true;
@@ -122,8 +123,11 @@ bool DeinitModule() {
  */
 extern "C" YABRIDGE_EXPORT Steinberg::IPluginFactory* PLUGIN_API
 GetPluginFactory() {
-    // The host should have called `InitModule()` first
-    assert(bridge);
+    // The host should have called `InitModule()` first, and that may have
+    // failed
+    if (!bridge) {
+        return nullptr;
+    }
 
     return bridge->get_plugin_factory();
 }

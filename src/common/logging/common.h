@@ -39,11 +39,9 @@
  * because DAWs like Bitwig hide this from you, making it hard to debug
  * crashing plugins.
  *
- * @note This does not do any synchronisation. While this should technically
- *   be causing problems in concurrent use, writing strings to fstreams from
- *   multiple threads at the same time doesn't seem to produce corrupted text if
- *   you're writing an entire string at once even though the messages may be
- *   slightly out of order.
+ * @note Writes to the output stream are serialized with a process wide mutex,
+ *   so messages from different threads may be out of order but never
+ *   interleaved.
  */
 class Logger {
    public:

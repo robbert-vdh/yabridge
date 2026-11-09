@@ -143,6 +143,11 @@ Configuration::Configuration(const fs::path& config_path,
 
 std::chrono::steady_clock::duration Configuration::event_loop_interval()
     const noexcept {
+    // A zero, negative or NaN frame rate from the config file would divide by
+    // zero or produce an interval that can't be represented
+    const double rate =
+        frame_rate && *frame_rate >= 1.0 && *frame_rate <= 1000.0 ? *frame_rate
+                                                                  : 60.0;
     return std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-        std::chrono::milliseconds(1000) / frame_rate.value_or(60.0));
+        std::chrono::milliseconds(1000) / rate);
 }

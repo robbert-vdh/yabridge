@@ -36,6 +36,7 @@
 
 #include "../bitsery/traits/small-vector.h"
 #include "../logging/common.h"
+#include "../serialization/common.h"
 #include "../utils.h"
 
 // Our input and output adapters for binary serialization always expect the data
@@ -301,8 +302,19 @@ class Sockets {
             //       there's now a safeguard against that very thing. Hopefully
             //       this should never be needed, but if it is, then I'm glad
             //       we'll have it!
-            const ghc::filesystem::path temp_dir = get_temporary_directory();
-            if (base_dir_.string().starts_with(temp_dir.string())) {
+            //       A plain prefix check would also accept the temporary
+            //       directory itself, `<temp>/..`, or a sibling directory that
+            //       happens to share the prefix, so the directory has to be a
+            //       direct child of the temporary directory with the name
+            //       `generate_endpoint_base()` gives it.
+            // Going through a child path also drops any trailing slash
+            const ghc::filesystem::path temp_dir =
+                (get_temporary_directory() / "child")
+                    .lexically_normal()
+                    .parent_path();
+            const ghc::filesystem::path base_dir = base_dir_.lexically_normal();
+            if (base_dir.parent_path() == temp_dir &&
+                base_dir.filename().string().starts_with("yabridge-")) {
                 ghc::filesystem::remove_all(base_dir_);
             } else {
                 Logger logger = Logger::create_exception_logger();
@@ -400,7 +412,7 @@ class SocketHandler {
         std::error_code err;
         socket_.shutdown(asio::local::stream_protocol::socket::shutdown_both,
                          err);
-        socket_.close();
+        socket_.close(err);
     }
 
     /**
@@ -609,13 +621,14 @@ class AdHocSocketHandler {
         std::error_code err;
         socket_.shutdown(asio::local::stream_protocol::socket::shutdown_both,
                          err);
-        socket_.close();
+        socket_.close(err);
 
-        while (currently_listening_) {
-            // If another thread is currently calling `receive_multi()`, we'll
-            // spinlock until that function has exited. We would otherwise get a
-            // use-after-free when this object is destroyed from another thread.
-        }
+        // If another thread is currently calling `receive_multi()`, we'll wait
+        // until that function has exited. We would otherwise get a
+        // use-after-free when this object is destroyed from another thread.
+        // This used to spin, burning a core for as long as the listener was
+        // busy.
+        currently_listening_.wait(true);
     }
 
    protected:
@@ -802,6 +815,7 @@ class AdHocSocketHandler {
         acceptor_.reset();
 
         currently_listening_ = false;
+        currently_listening_.notify_all();
     }
 
     /**
@@ -1143,7 +1157,39 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
                 // type, and we can scrap a lot of boilerplate elsewhere.
                 std::visit(
                     [&]<typename T>(T object) {
-                        typename T::Response response = callback(object);
+                        // An exception escaping this thread terminates the
+                        // whole process. This happens for instance when a
+                        // callback arrives for an object that has already been
+                        // removed. Sending back a default response instead
+                        // keeps both sides in sync. Socket errors still end
+                        // the loop as before.
+                        typename T::Response response =
+                            [&]() -> typename T::Response {
+                            try {
+                                return callback(object);
+                            } catch (const std::system_error&) {
+                                throw;
+                            } catch (const std::exception& error) {
+                                // Some responses can only be serialized when
+                                // they refer to the request's actual output
+                                // data, or a default response would otherwise
+                                // look like a successful one. Propagate the
+                                // error instead of corrupting the protocol.
+                                if constexpr (!is_safe_default_response<
+                                                  T>::value) {
+                                    throw;
+                                }
+
+                                if (logging) {
+                                    logging->first.logger_.log(
+                                        "Failed to handle a request, sending "
+                                        "back a default response: " +
+                                        std::string(error.what()));
+                                }
+
+                                return typename T::Response{};
+                            }
+                        }();
 
                         if (should_log_response) {
                             auto [logger, is_host_plugin] = *logging;

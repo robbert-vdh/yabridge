@@ -279,3 +279,22 @@ void serialize(S& s, Vst3CallbackRequest& payload) {
     // serialization function.
     s.ext(payload, bitsery::ext::InPlaceVariant{});
 }
+
+// These requests cannot answer with a default response. A default
+// `ConstructArgs` would look like a valid object with instance ID 0, a default
+// `InitializeResponse` would replace the proxy's interfaces with empty ones,
+// and a default process response contains null output pointers.
+template <>
+struct is_safe_default_response<Vst3PluginProxy::Construct> : std::false_type {
+};
+template <>
+struct is_safe_default_response<Vst3PluginProxy::Initialize> : std::false_type {
+};
+template <>
+struct is_safe_default_response<Vst3PluginFactoryProxy::Construct>
+    : std::false_type {};
+template <>
+struct is_safe_default_response<MessageReference<YaAudioProcessor::Process>>
+    : std::false_type {};
+template <>
+struct is_safe_default_response<YaAudioProcessor::Process> : std::false_type {};

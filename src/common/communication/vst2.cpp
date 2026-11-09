@@ -53,9 +53,16 @@ void DefaultDataConverter::write_data(const int /*opcode*/,
 
                             // We use std::string for easy transport but in
                             // practice we're always writing null terminated
-                            // C-style strings
-                            std::copy(s.begin(), s.end(), output);
-                            output[s.size()] = 0;
+                            // C-style strings. Strings can be up to
+                            // `max_string_length` characters long, so the
+                            // terminator has to fit within that as well. We
+                            // don't enforce the much smaller per-opcode limits
+                            // from the VST2 SDK, since plugins routinely
+                            // exceed them and hosts allocate for that.
+                            const size_t length =
+                                std::min(s.size(), max_string_length - 1);
+                            std::copy_n(s.begin(), length, output);
+                            output[length] = 0;
                         }},
                response.payload);
 }

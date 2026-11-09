@@ -21,6 +21,8 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
+#include <stdexcept>
 
 /**
  * The environment variable indicating whether to log to a file. Will log to
@@ -76,7 +78,8 @@ Logger Logger::create_from_environment(std::string prefix,
     Verbosity verbosity_level;
     try {
         verbosity_level = static_cast<Verbosity>(std::stoi(verbosity));
-    } catch (const std::invalid_argument&) {
+    } catch (const std::logic_error&) {
+        // Both `std::invalid_argument` and `std::out_of_range`
         verbosity_level = Verbosity::basic;
     }
 
@@ -143,5 +146,9 @@ void Logger::log(const std::string& message) {
     // stream to prevent two messages from being put on the same row
     formatted_message << std::endl;
 
+    // Multiple threads, and multiple bridges in a group host, can share the
+    // same output stream
+    static std::mutex stream_mutex;
+    std::lock_guard lock(stream_mutex);
     *stream_ << formatted_message.str() << std::flush;
 }

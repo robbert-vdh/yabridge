@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <exception>
 #include <future>
 #include <optional>
 #include <type_traits>
@@ -99,7 +100,15 @@ class MutualRecursionHelper {
         // to `handle()`/`maybe_handle()` from this thread
         std::promise<Result> response_promise{};
         Thread sending_thread([&]() {
-            const Result response = fn();
+            // An exception escaping this thread would terminate the process,
+            // so it's passed on to the calling thread instead
+            std::optional<Result> response;
+            std::exception_ptr error;
+            try {
+                response.emplace(fn());
+            } catch (...) {
+                error = std::current_exception();
+            }
 
             // Stop accepting additional work to be run from the calling thread
             // once `fn` returns (and we'll likely have gotten a response from
@@ -112,7 +121,11 @@ class MutualRecursionHelper {
                 mutual_recursion_contexts_.begin(),
                 mutual_recursion_contexts_.end(), current_io_context));
 
-            response_promise.set_value(response);
+            if (error) {
+                response_promise.set_exception(error);
+            } else {
+                response_promise.set_value(std::move(*response));
+            }
         });
 
         // Accept work from the other thread until we receive a response, at

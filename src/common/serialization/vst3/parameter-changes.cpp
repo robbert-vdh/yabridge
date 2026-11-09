@@ -28,12 +28,24 @@ void YaParameterChanges::clear() noexcept {
 
 void YaParameterChanges::repopulate(
     Steinberg::Vst::IParameterChanges& original_queues) {
-    // Copy over all parameter change queues
-    const size_t num_queues = original_queues.getParameterCount();
-    queues_.resize(num_queues);
-    for (size_t i = 0; i < num_queues; i++) {
-        queues_[i].repopulate(
-            *original_queues.getParameterData(static_cast<int>(i)));
+    // Copy over all parameter change queues. `getParameterCount()` is signed,
+    // and a negative value would turn into a huge `size_t`.
+    const int32 num_queues = original_queues.getParameterCount();
+    if (num_queues <= 0) {
+        queues_.clear();
+        return;
+    }
+
+    queues_.resize(static_cast<size_t>(num_queues));
+    for (int32 i = 0; i < num_queues; i++) {
+        // A queue the host can't give us is passed on as an empty one, so the
+        // indices still line up
+        if (Steinberg::Vst::IParamValueQueue* queue =
+                original_queues.getParameterData(static_cast<int>(i))) {
+            queues_[i].repopulate(*queue);
+        } else {
+            queues_[i].clear_for_parameter(0);
+        }
     }
 }
 
@@ -67,7 +79,7 @@ int32 PLUGIN_API YaParameterChanges::getParameterCount() {
 
 Steinberg::Vst::IParamValueQueue* PLUGIN_API
 YaParameterChanges::getParameterData(int32 index) {
-    if (index < static_cast<int32>(queues_.size())) {
+    if (index >= 0 && index < static_cast<int32>(queues_.size())) {
         return &queues_[index];
     } else {
         return nullptr;

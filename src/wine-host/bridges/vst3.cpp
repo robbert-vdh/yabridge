@@ -1545,7 +1545,7 @@ size_t Vst3Bridge::generate_instance_id() noexcept {
 }
 
 std::pair<Vst3PluginInstance&, std::shared_lock<std::shared_mutex>>
-Vst3Bridge::get_instance(size_t instance_id) noexcept {
+Vst3Bridge::get_instance(size_t instance_id) {
     std::shared_lock lock(object_instances_mutex_);
 
     return std::pair<Vst3PluginInstance&, std::shared_lock<std::shared_mutex>>(

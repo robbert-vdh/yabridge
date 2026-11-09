@@ -70,6 +70,8 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
      */
     const void* get_factory(const char* factory_id);
 
+    using PluginBridge::host_died;
+
     /**
      * Fetch the plugin proxy instance along with a lock valid for the
      * instance's lifetime. This is mostly just to save some boilerplate
@@ -77,7 +79,7 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
      * to deal with the lock handle.
      */
     std::pair<clap_plugin_proxy&, std::shared_lock<std::shared_mutex>>
-    get_proxy(size_t instance_id) noexcept;
+    get_proxy(size_t instance_id);
 
     /**
      * Add a `clap_plugin_proxy` to the list of registered plugin proxies so we
@@ -111,8 +113,16 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
      */
     template <typename T>
     typename T::Response send_main_thread_message(const T& object) {
-        return sockets_.host_plugin_main_thread_control_.send_message(
-            object, std::pair<ClapLogger&, bool>(logger_, true));
+        // If the Wine plugin host has died, then this returns a default
+        // initialized response
+        typename T::Response response_object{};
+        with_live_host([&]() {
+            sockets_.host_plugin_main_thread_control_.receive_into(
+                object, response_object,
+                std::pair<ClapLogger&, bool>(logger_, true));
+        });
+
+        return response_object;
     }
 
     /**
@@ -121,8 +131,13 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
      */
     template <typename T>
     typename T::Response send_audio_thread_message(const T& object) {
-        return sockets_.send_audio_thread_control_message(
-            object, std::pair<ClapLogger&, bool>(logger_, true));
+        typename T::Response response_object{};
+        with_live_host([&]() {
+            response_object = sockets_.send_audio_thread_control_message(
+                object, std::pair<ClapLogger&, bool>(logger_, true));
+        });
+
+        return response_object;
     }
 
     /**
@@ -136,9 +151,13 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
     typename T::Response& receive_audio_thread_message_into(
         const T& object,
         typename T::Response& response_object) {
-        return sockets_.receive_audio_thread_control_message_into(
-            object, response_object,
-            std::pair<ClapLogger&, bool>(logger_, true));
+        with_live_host([&]() {
+            sockets_.receive_audio_thread_control_message_into(
+                object, response_object,
+                std::pair<ClapLogger&, bool>(logger_, true));
+        });
+
+        return response_object;
     }
 
     // TODO: Do we need this for CLAP? If we do, update the docstring

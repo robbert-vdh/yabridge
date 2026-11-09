@@ -70,8 +70,7 @@ void Process::repopulate(const clap_process_t& process,
             // We copy the actual input audio for every bus to the shared memory
             // object
             for (uint32_t channel = 0;
-                 channel < process.audio_inputs[port].channel_count;
-                 channel++) {
+                 channel < audio_inputs_[port].channel_count; channel++) {
                 std::copy_n(process.audio_inputs[port].data32[channel],
                             frames_count_,
                             shared_audio_buffers.input_channel_ptr<float>(
@@ -82,8 +81,7 @@ void Process::repopulate(const clap_process_t& process,
                 clap::audio_buffer::AudioBufferType::Double64;
 
             for (uint32_t channel = 0;
-                 channel < process.audio_inputs[port].channel_count;
-                 channel++) {
+                 channel < audio_inputs_[port].channel_count; channel++) {
                 std::copy_n(process.audio_inputs[port].data64[channel],
                             frames_count_,
                             shared_audio_buffers.input_channel_ptr<double>(
@@ -136,11 +134,17 @@ const clap_process_t& Process::reconstruct(
     // The actual audio data is contained within a shared memory object, and the
     // input and output pointers point to regions in that object. These pointers
     // are calculated during `clap_plugin::activate()`.
-    assert(audio_inputs_.size() <= input_pointers.size() &&
-           audio_outputs_.size() <= output_pointers.size() &&
-           audio_inputs_type_.size() == audio_inputs_.size() &&
+    // Ports the host passed on top of the plugin's own have no channels, see
+    // `repopulate()`, and also have no place in the shared memory object
+    assert(audio_inputs_type_.size() == audio_inputs_.size() &&
            audio_outputs_type_.size() == audio_outputs_.size());
     for (size_t port = 0; port < audio_inputs_.size(); port++) {
+        if (port >= input_pointers.size()) {
+            audio_inputs_[port].data32 = nullptr;
+            audio_inputs_[port].data64 = nullptr;
+            continue;
+        }
+
         // The sample depth depends on whether the plugin claimed to support
         // 64-bit or not and whether the host ended up passing us 32-bit or
         // 64-bit audio
@@ -157,6 +161,12 @@ const clap_process_t& Process::reconstruct(
         }
     }
     for (size_t port = 0; port < audio_outputs_.size(); port++) {
+        if (port >= output_pointers.size()) {
+            audio_outputs_[port].data32 = nullptr;
+            audio_outputs_[port].data64 = nullptr;
+            continue;
+        }
+
         switch (audio_outputs_type_[port]) {
             case clap::audio_buffer::AudioBufferType::Float32:
             default:

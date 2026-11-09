@@ -16,6 +16,7 @@
 
 #include "physical-ui-map-list.h"
 
+#include <algorithm>
 #include <cassert>
 
 YaPhysicalUIMapList::YaPhysicalUIMapList() noexcept {}
@@ -32,11 +33,13 @@ Steinberg::Vst::PhysicalUIMapList YaPhysicalUIMapList::get() noexcept {
 
 void YaPhysicalUIMapList::write_back(
     Steinberg::Vst::PhysicalUIMapList& list) const {
-    assert(list.count == maps_.size());
-
     // Write the note expression IDs as updated by the plugin (if the plugin
-    // updated them) back to the original list we've read from
-    for (Steinberg::uint32 i = 0; i < list.count; i++) {
+    // updated them) back to the original list we've read from. These should
+    // have the same size, but a plugin that changed the count must not make us
+    // read past the end of our list.
+    const Steinberg::uint32 count = std::min(
+        list.count, static_cast<Steinberg::uint32>(maps_.size()));
+    for (Steinberg::uint32 i = 0; i < count; i++) {
         list.map[i].noteExpressionTypeID = maps_[i].noteExpressionTypeID;
     }
 }

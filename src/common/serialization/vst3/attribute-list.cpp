@@ -221,6 +221,12 @@ tresult PLUGIN_API YaAttributeList::getString(AttrID id,
         return Steinberg::kInvalidArgument;
     }
 
+    // There has to be room for at least the null terminator, or the size
+    // calculation below underflows
+    if (sizeInBytes < sizeof(Steinberg::Vst::TChar)) {
+        return Steinberg::kInvalidArgument;
+    }
+
     if (const auto it = attrs_string_.find(id); it != attrs_string_.end()) {
         // We may only copy `sizeInBytes / 2` UTF-16 characters to `string`,
         // We'll also have to make sure it's null terminated, so we'll reserve

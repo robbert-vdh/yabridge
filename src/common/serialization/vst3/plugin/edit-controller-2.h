@@ -45,7 +45,7 @@ class YaEditController2 : public Steinberg::Vst::IEditController2 {
         /**
          * Whether the object supported this interface.
          */
-        bool supported;
+        bool supported = false;
 
         template <typename S>
         void serialize(S& s) {
