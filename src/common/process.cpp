@@ -252,7 +252,8 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     // We'll read the results from a pipe. The child writes to the second pipe,
     // we'll read from the first one.
     int stdout_pipe_fds[2];
-    assert(pipe(stdout_pipe_fds) == 0);
+    [[maybe_unused]] const int pipe_result = pipe(stdout_pipe_fds);
+    assert(pipe_result == 0);
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
@@ -269,6 +270,7 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
 
     close(stdout_pipe_fds[1]);
     if (result == 2) {
@@ -288,7 +290,8 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     fclose(output_pipe_stream);
 
     int status = 0;
-    assert(waitpid(child_pid, &status, 0) > 0);
+    [[maybe_unused]] const pid_t wait_result = waitpid(child_pid, &status, 0);
+    assert(wait_result > 0);
     if (!WIFEXITED(status) || WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
@@ -316,7 +319,8 @@ Process::StatusResult Process::spawn_get_status() const {
     }
 
     int status = 0;
-    assert(waitpid(child_pid, &status, 0) > 0);
+    [[maybe_unused]] const pid_t wait_result = waitpid(child_pid, &status, 0);
+    assert(wait_result > 0);
     if (!WIFEXITED(status) || WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
@@ -378,8 +382,9 @@ Process::HandleResult Process::spawn_child_piped(
     // and the child process will write to the second elements.
     int stdout_pipe_fds[2];
     int stderr_pipe_fds[2];
-    assert(pipe(stdout_pipe_fds) == 0);
-    assert(pipe(stderr_pipe_fds) == 0);
+    [[maybe_unused]] const int stdout_pipe_result = pipe(stdout_pipe_fds);
+    [[maybe_unused]] const int stderr_pipe_result = pipe(stderr_pipe_fds);
+    assert(stdout_pipe_result == 0 && stderr_pipe_result == 0);
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
@@ -390,12 +395,18 @@ Process::HandleResult Process::spawn_child_piped(
                                      STDOUT_FILENO);
     posix_spawn_file_actions_adddup2(&actions, stderr_pipe_fds[1],
                                      STDERR_FILENO);
+    // Some Wine builds crash during startup when STDIN is closed, which can
+    // happen when the host itself was started without a STDIN. The Wine host
+    // never reads from STDIN, so we'll always give it `/dev/null` instead.
+    posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null",
+                                     O_RDONLY, 0);
     // We'll close the four pipe fds along with the rest of the file descriptors
     close_non_stdio_file_descriptors(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
 
     // We'll assign the read ends of the pipes to the Asio stream descriptors
     // passed to this function, even if launching the process failed.
@@ -417,7 +428,9 @@ Process::HandleResult Process::spawn_child_piped(
     // with status 127 instead. I have no idea how we'd check for that without
     // waiting here though, so this check may not work
     int status = 0;
-    assert(waitpid(child_pid, &status, WNOHANG) >= 0);
+    [[maybe_unused]] const pid_t wait_result =
+        waitpid(child_pid, &status, WNOHANG);
+    assert(wait_result >= 0);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
@@ -437,11 +450,17 @@ Process::HandleResult Process::spawn_child_redirected(
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, filename.c_str(),
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
+    // Some Wine builds crash during startup when STDIN is closed, which can
+    // happen when the host itself was started without a STDIN. The Wine host
+    // never reads from STDIN, so we'll always give it `/dev/null` instead.
+    posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null",
+                                     O_RDONLY, 0);
     close_non_stdio_file_descriptors(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
     if (result == 2) {
         return Process::CommandNotFound{};
     } else if (result != 0) {
@@ -449,7 +468,9 @@ Process::HandleResult Process::spawn_child_redirected(
     }
 
     int status = 0;
-    assert(waitpid(child_pid, &status, WNOHANG) >= 0);
+    [[maybe_unused]] const pid_t wait_result =
+        waitpid(child_pid, &status, WNOHANG);
+    assert(wait_result >= 0);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
