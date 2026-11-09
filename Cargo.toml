@@ -1,0 +1,3 @@
+[workspace]
+members = ["tools/yabridgectl"]
+resolver = "3"

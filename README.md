@@ -554,6 +554,9 @@ include:
   section for instructions on how to set this up. This is not necessary for VST3
   plugins, as multiple instances of those plugins will always be hosted in a
   single process by design.
+- **D16 Group** plugins require a manual
+  [workaround](https://bugs.winehq.org/show_bug.cgi?id=51870#c10) to be
+  activated.
 - Some hosts, particularly _Ardour_, _REAPER_, _Qtractor_, will by default not
   unload VST3 modules after you close the last plugin. This means that the
   associated `yabridge-host.exe` process will keep running until you close the
@@ -569,8 +572,6 @@ Aside from that, these are some known caveats:
 
 - **iZotope** plugins can't be authorized because of missing functionality in
   Wine's crypt32 implementation.
-- **D16 Group** plugins also can't be authorized in current versions of Wine as
-  they don't recall their authorization status correctly.
 - **Waves** V13 VST3 plugins have memory issues, at least under Wine. They will
   likely randomly crash at some point. If you can avoid Waves, that would be for
   the best. Otherwise, try the V12 versions of the plugins if you still have a

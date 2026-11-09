@@ -16,7 +16,7 @@
 
 //! Helper utilities and wrappers around filesystem functions for use with anyhow.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use colored::Colorize;
 use is_executable::IsExecutable;
 use std::collections::hash_map::DefaultHasher;
@@ -170,7 +170,7 @@ pub fn get_default_wine_prefix_arch() -> LibArchitecture {
 
     for line in BufReader::new(wine_system_reg)
         .lines()
-        .filter_map(|l| l.ok())
+        .map_while(Result::ok)
     {
         match line.as_str() {
             "#arch=win32" => return LibArchitecture::Lib32,
@@ -207,7 +207,7 @@ pub fn hash_file(file: &Path) -> Result<i64> {
 pub fn normalize_path(path: &Path) -> PathBuf {
     for prefix in path.ancestors() {
         // If part of `path`s prefix exists, then we'll try to resolve symlinks there
-        if let Ok(normalized_prefix) = fs::canonicalize(&prefix) {
+        if let Ok(normalized_prefix) = fs::canonicalize(prefix) {
             return normalized_prefix.join(path.strip_prefix(prefix).unwrap());
         }
     }
@@ -268,7 +268,7 @@ pub fn verify_path_setup() -> Result<bool> {
             // shells use to determine that they're being run as a login shell is by checking that
             // `argv[0]` starts with a hyphen, so we'll also do that.
             let mut command = Command::new(&shell_path);
-            command.arg0(format!("-{}", &shell_path));
+            command.arg0(format!("-{}", shell_path));
 
             let command = match shell {
                 // All of these shells support the `-l` flag to start a login shell and have a
@@ -485,8 +485,8 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
 /// Check whether yabridge's (optional) external dependencies are installed. Right now this only
 /// checks for libdbus, as this is used to relay important information when something's very wrong.
 pub fn verify_external_dependencies() -> Result<()> {
-    let libdbus_available = unsafe { libloading::Library::new(&LIBDBUS_NAME) }
-        .or_else(|_| unsafe { libloading::Library::new(&LIBDBUS_FALLBACK_NAME) })
+    let libdbus_available = unsafe { libloading::Library::new(LIBDBUS_NAME) }
+        .or_else(|_| unsafe { libloading::Library::new(LIBDBUS_FALLBACK_NAME) })
         .is_ok();
     if !libdbus_available {
         eprintln!(

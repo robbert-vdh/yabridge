@@ -8,6 +8,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Breaking changes
+
+- Yabridgectl now respects the `LXVST_PATH`, `VST_PATH`, and `VST3_PATH`
+  environment variables to determine where to place its VST2 and VST3 plugin
+  files. If those environment variables are set, then the next `yabridgectl sync`
+  run after upgrading yabridge may result in old leftover plugin files in
+  `~/.vst/yabridge` or `~/.vst3/yabridge` that need to be manually removed.
+
 ### Fixed
 
 - Fixed a compatibility issue with **Wine 9.22** and above that caused mouse
@@ -20,6 +28,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   **Ardour** that would cause yabridge to hang and eventually crash the host by
   consuming too much memory. This only affected the prebuilt binaries from the
   releases page.
+- Fixed VST3 plugins potentially freezing in **Bitwig Studio** when interacting
+  with parameters while the plugin's state was being saved
+  ([#505](https://github.com/robbert-vdh/yabridge/pull/505)).
 - Fixed an issue where **REAPER** could crash with a `BadWindow` X11 error when
   quickly switching between plugin editors
   ([#531](https://github.com/robbert-vdh/yabridge/pull/531)) This was easy to
@@ -50,6 +61,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- Yabridgectl now respects `LXVST_PATH`, `VST_PATH`, and `VST3_PATH` environment
+  variables to determine where to place its VST2 and VST3 plugin files
+  ([#306](https://github.com/robbert-vdh/yabridge/pull/306)).
 - Fixed a regression that caused `yabridgectl set --path-auto` to no longer
   work.
 
@@ -97,6 +111,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- The Rust workspace for yabridgectl is now defined in the repo's root rather
+  than in `tools/yabridgectl`, so both the `Cargo.lock` file and the `target`
+  directory the compiled binaries end up in are now located at the repo's root
+  rather than in `tools/yabridgectl`.
 - This release includes a workaround to make bitsery compile with GCC 13 due to
   changes in transitive header includes.
 - The CLAP dependency has been updated to target version 1.1.9 (revision version

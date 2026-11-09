@@ -16,7 +16,7 @@
 
 //! Utilities for managing yabrigectl's configuration.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -102,10 +102,12 @@ pub struct Config {
 /// files.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum Vst2InstallationLocation {
     /// Set up the plugins in `~/.vst/yabridge`. The downside of this approach is that you cannot
     /// have multiple plugins with the same name being provided by multiple directories or prefixes.
     /// That might be useful for debugging purposes.
+    #[default]
     Centralized,
     /// Create the `.so` files right next to the original VST2 plugins.
     Inline,
@@ -161,12 +163,6 @@ pub struct YabridgeFiles {
     /// The same as `yabridge_host_exe_so`, but for the 32-bit verison. We will hash this instead of
     /// there's no 64-bit version available.
     pub yabridge_host_32_exe_so: Option<PathBuf>,
-}
-
-impl Default for Vst2InstallationLocation {
-    fn default() -> Self {
-        Vst2InstallationLocation::Centralized
-    }
 }
 
 impl Config {
@@ -364,40 +360,63 @@ pub fn yabridgectl_directories() -> Result<BaseDirectories> {
 
 /// Get the path where bridged VST2 plugin files should be placed when using the centralized
 /// installation location setting. This is a subdirectory of `~/.vst` so we can easily clean up
-/// leftover files without interfering with other native plugins.
+/// leftover files without interfering with other native plugins. Unless `$LXVST_PATH` or
+/// `$VST_PATH` are set, in which case this is a subdirectory if the first directory from that
+/// environment variable.
 pub fn yabridge_vst2_home() -> PathBuf {
-    Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST2_HOME)
+    let vst2_path = read_path_from_env_var("LXVST_PATH")
+        .or_else(|| read_path_from_env_var("VST_PATH"))
+        .map(|path| path.join(YABRIDGE_PREFIX));
+
+    // If neither `$LXVST_PATH` nor `$VST_PATH` is not set, we'll fall back to `~/.vst`
+    vst2_path.unwrap_or_else(|| {
+        Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST2_HOME)
+    })
 }
 
 /// Get the path where VST3 modules bridged by yabridgectl should be placed in. This is a
 /// subdirectory of `~/.vst3` so we can easily clean up leftover files without interfering with
-/// other native plugins.
+/// other native plugins. Unless `$VST3_PATH` is set, in which case this is a subdirectory if the
+/// first directory in `$VST3_PATH`.
 pub fn yabridge_vst3_home() -> PathBuf {
-    Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST3_HOME)
+    let vst3_path = read_path_from_env_var("VST3_PATH").map(|path| path.join(YABRIDGE_PREFIX));
+
+    // If `$VST3_PATH` is not set, then we'll fall back to `~/.vst3`
+    vst3_path.unwrap_or_else(|| {
+        Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST3_HOME)
+    })
 }
 
 /// Get the path where CLAP modules bridged by yabridgectl should be placed in. This is a
 /// subdirectory of `~/.clap` so we can easily clean up leftover files without interfering with
 /// other native plugins. Unless `$CLAP_PATH` is set, in which case this is a subdirectory if the
-/// first direcotry in `$CLAP_PATH`.
+/// first directory in `$CLAP_PATH`.
 pub fn yabridge_clap_home() -> PathBuf {
-    // Noone's going to be running yabridgectl on Windows, but this would need to be a semicolon
-    // there
-    #[cfg(unix)]
-    const PATH_SEPARATOR: char = ':';
-
-    let clap_path = env::var("CLAP_PATH").ok();
-    let clap_path: Option<PathBuf> = clap_path
-        .as_ref()
-        .map(|path| {
-            path.split_once(PATH_SEPARATOR)
-                .map(|(first_path, _)| first_path)
-                .unwrap_or(path)
-        })
-        .map(|path| Path::new(path).join(YABRIDGE_PREFIX));
+    let clap_path = read_path_from_env_var("CLAP_PATH").map(|path| path.join(YABRIDGE_PREFIX));
 
     // If `$CLAP_PATH` is not set (which it probably won't be), then we'll fall back to `~/.clap`
     clap_path.unwrap_or_else(|| {
         Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_CLAP_HOME)
     })
+}
+
+/// Get the first path from a colon-separated `PATH`-style environment variable. Returns `Nothing`
+/// if the resulting path is empty.
+fn read_path_from_env_var(var_name: &str) -> Option<PathBuf> {
+    // Noone's going to be running yabridgectl on Windows, but this would need to be a semicolon
+    // there
+    #[cfg(unix)]
+    const PATH_SEPARATOR: char = ':';
+
+    let path_var = env::var(var_name).ok()?;
+    let first_path = path_var
+        .split_once(PATH_SEPARATOR)
+        .map(|(first_path, _)| first_path)
+        .unwrap_or(&path_var);
+
+    if !first_path.is_empty() {
+        Some(PathBuf::from(first_path))
+    } else {
+        None
+    }
 }

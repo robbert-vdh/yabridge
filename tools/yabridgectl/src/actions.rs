@@ -25,9 +25,9 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::config::{
-    yabridge_clap_home, yabridge_vst2_home, yabridge_vst3_home, Config, Vst2InstallationLocation,
-    YabridgeFiles, CLAP_CHAINLOADER_NAME, VST2_CHAINLOADER_NAME, VST3_CHAINLOADER_NAME,
-    YABRIDGE_HOST_32_EXE_NAME, YABRIDGE_HOST_EXE_NAME,
+    CLAP_CHAINLOADER_NAME, Config, VST2_CHAINLOADER_NAME, VST3_CHAINLOADER_NAME,
+    Vst2InstallationLocation, YABRIDGE_HOST_32_EXE_NAME, YABRIDGE_HOST_EXE_NAME, YabridgeFiles,
+    yabridge_clap_home, yabridge_vst2_home, yabridge_vst3_home,
 };
 use crate::files::{self, ClapPlugin, NativeFile, Plugin, Vst2Plugin};
 use crate::util::{self, get_file_type};
@@ -313,21 +313,21 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // Before doing anything, make sure `~/.{clap,vst,vst3}/yabridge` are not symlinks to one of the
     // plugin directories. See
     // https://github.com/robbert-vdh/yabridge/issues/185#issuecomment-1166274104.
-    let bail_if_unsafe_symlink = |plugin_home: &Path, plugin_home_display| {
-        if let Ok(canonical_plugin_home) = fs::canonicalize(&plugin_home) {
-            if canonical_plugin_home != plugin_home {
-                for plugin_dir in &config.plugin_dirs {
-                    if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
-                        if canonical_plugin_dir.starts_with(&canonical_plugin_home) {
-                            anyhow::bail!(
-                                "'{plugin_home_display}' is a symlink to '{}'. This conflicts \
-                                 with '{}' from your plugin directories, so the syncing process \
-                                 will now be aborted.",
-                                canonical_plugin_home.display(),
-                                plugin_dir.display(),
-                            );
-                        }
-                    }
+    let bail_if_unsafe_symlink = |plugin_home: &Path| {
+        if let Ok(canonical_plugin_home) = fs::canonicalize(plugin_home)
+            && canonical_plugin_home != plugin_home
+        {
+            for plugin_dir in &config.plugin_dirs {
+                if let Ok(canonical_plugin_dir) = fs::canonicalize(plugin_dir)
+                    && canonical_plugin_dir.starts_with(&canonical_plugin_home)
+                {
+                    anyhow::bail!(
+                        "'{}' is a symlink to '{}'. This conflicts with '{}' from your plugin \
+                         directories, so the syncing process will now be aborted.",
+                        plugin_home.display(),
+                        canonical_plugin_home.display(),
+                        plugin_dir.display(),
+                    );
                 }
             }
         }
@@ -338,9 +338,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let vst2_home = yabridge_vst2_home();
     let vst3_home = yabridge_vst3_home();
     let clap_home = yabridge_clap_home();
-    bail_if_unsafe_symlink(&vst2_home, "~/.vst/yabridge")?;
-    bail_if_unsafe_symlink(&vst3_home, "~/.vst3/yabridge")?;
-    bail_if_unsafe_symlink(&clap_home, "~/.clap/yabridge")?;
+    bail_if_unsafe_symlink(&vst2_home)?;
+    bail_if_unsafe_symlink(&vst3_home)?;
+    bail_if_unsafe_symlink(&clap_home)?;
 
     // Keep track of some global statistics
     // The plugin files we installed. This tracks copies of/symlinks to `libabyrdge-*.so` managed.
@@ -485,7 +485,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     // prefixes at the same time so we'll warn when that happens
                     let managed_vst3_bundle_files = known_centralized_vst3_files
                         .entry(target_bundle_home.clone())
-                        .or_insert_with(HashSet::new);
+                        .or_default();
                     if managed_vst3_bundle_files.contains(&target_windows_module_path) {
                         eprintln!(
                             "{}",
@@ -879,16 +879,17 @@ fn install_file(
     // exists and does not require updating, we'll just skip the file since some DAWs will otherwise
     // unnecessarily reindex the file. We check `std::fs::symlink_metadata` instead of
     // `Path::exists()` because the latter reports false for broken symlinks.
-    if let Ok(metadata) = fs::symlink_metadata(&to) {
+    if let Ok(metadata) = fs::symlink_metadata(to) {
         match (force, &method) {
             (false, InstallationMethod::Copy) => {
                 // If the target file is already a real file (not a symlink) and its hash is the
                 // same as that of the `from` file we're trying to copy there, then we don't have to
                 // do anything
-                if let Some(hash) = from_hash {
-                    if metadata.file_type().is_file() && util::hash_file(to)? == hash {
-                        return Ok(false);
-                    }
+                if let Some(hash) = from_hash
+                    && metadata.file_type().is_file()
+                    && util::hash_file(to)? == hash
+                {
+                    return Ok(false);
                 }
             }
             (false, InstallationMethod::Symlink) => {
@@ -901,7 +902,7 @@ fn install_file(
             (true, _) => (),
         }
 
-        util::remove_file(&to)?;
+        util::remove_file(to)?;
     };
 
     match method {

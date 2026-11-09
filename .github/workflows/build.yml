@@ -67,9 +67,6 @@ jobs:
     container: robbert/docker-yabridge:focal
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
-    defaults:
-      run:
-        working-directory: tools/yabridgectl
     steps:
       - uses: actions/checkout@v7
       # Needed for git-describe to do anything useful, the safe directory
@@ -95,13 +92,11 @@ jobs:
       - name: Create an archive for the binaries
         run: |
           mkdir yabridgectl
-          cp target/release/yabridgectl README.md yabridgectl
+          cp target/release/yabridgectl tools/yabridgectl/README.md yabridgectl
 
           tar -caf "$ARCHIVE_NAME" yabridgectl
           rm -rf yabridgectl
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARCHIVE_NAME }}
-          # For some reason there's no way to tell GitHub actions to run actions
-          # in a subdirectory
-          path: tools/yabridgectl/${{ env.ARCHIVE_NAME }}
+          path: ${{ env.ARCHIVE_NAME }}
