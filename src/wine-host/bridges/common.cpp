@@ -16,7 +16,9 @@
 
 #include "common.h"
 
+#include <chrono>
 #include <iostream>
+#include <optional>
 
 #include "../../common/process.h"
 #include "../editor.h"
@@ -60,6 +62,46 @@ HostBridge::HostBridge(MainContext& main_context,
 void HostBridge::handle_events() noexcept {
     MSG msg;
 
+    // Wine checks hardware input before timers when looking for messages, so
+    // under continuous mouse input plugin timers (10/16 ms) fire at half rate
+    // and the editor stops animating smoothly. Peek timers separately first:
+    // with a WM_TIMER-only range the server skips the input queue and hands
+    // out expired timers even while mouse messages are pending.
+    for (int i = 0;
+         i < max_win32_messages &&
+         PeekMessage(&msg, nullptr, WM_TIMER, WM_TIMER, PM_REMOVE);
+         i++) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    // Coalesce mouse moves to at most one per ~16 ms. Serum 2 skips expensive
+    // wavetable redraws when moves arrive faster than it can render (observed
+    // above ~60 Hz), while Windows normally coalesces mouse moves in the
+    // queue. Without this, a 1 kHz mouse delivers every move and the wave
+    // display freezes until the drag ends. The latest move is kept and
+    // dispatched on a later iteration, and flushed before a non-move message
+    // so the position is current when e.g. the button goes up. The 16 ms cap
+    // is independent of the event loop rate so raising `frame_rate` does not
+    // bring the problem back.
+    static std::optional<MSG> pending_mouse_move;
+    static std::chrono::steady_clock::time_point last_mouse_move;
+    const auto dispatch = [](MSG& message) {
+        TranslateMessage(&message);
+        DispatchMessage(&message);
+    };
+    const auto can_dispatch_move = [] {
+        return std::chrono::steady_clock::now() - last_mouse_move >=
+               std::chrono::milliseconds(16);
+    };
+    bool dispatched_move = false;
+    if (pending_mouse_move && can_dispatch_move()) {
+        dispatch(*pending_mouse_move);
+        pending_mouse_move.reset();
+        last_mouse_move = std::chrono::steady_clock::now();
+        dispatched_move = true;
+    }
+
     int limit = max_win32_messages;
     for (int i = 0; i < limit && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
          i++) {
@@ -68,8 +110,21 @@ void HostBridge::handle_events() noexcept {
             limit = extended_max_win32_messages;
         }
 
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        if (msg.message == WM_MOUSEMOVE || msg.message == WM_NCMOUSEMOVE) {
+            if (dispatched_move || !can_dispatch_move()) {
+                pending_mouse_move = msg;
+                continue;
+            }
+            last_mouse_move = std::chrono::steady_clock::now();
+            dispatched_move = true;
+        } else if (pending_mouse_move) {
+            dispatch(*pending_mouse_move);
+            pending_mouse_move.reset();
+            last_mouse_move = std::chrono::steady_clock::now();
+            dispatched_move = true;
+        }
+
+        dispatch(msg);
     }
 }
 
