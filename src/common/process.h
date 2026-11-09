@@ -250,8 +250,8 @@ class Process {
 
 #ifndef WITHOUT_ASIO
     /**
-     * Spawn the process without waiting for its completion, leave STDIN alone,
-     * create pipes for STDOUT and STDERR, and assign those to the provided
+     * Spawn the process without waiting for its completion, redirect STDIN to
+     * `/dev/null`, create pipes for STDOUT and STDERR, and assign those to the provided
      * (empty) stream descriptors. Use `posix_spawn()`, closes all non-STDIO
      * file descriptors. The process will be terminated when the child process
      * handle gets dropped.
@@ -262,8 +262,8 @@ class Process {
 #endif  // WITHOUT_ASIO
 
     /**
-     * Spawn the process without waiting for its completion, leave STDIN alone,
-     * and redirect STDOUT and STDERR to a file. Use `posix_spawn()`, closes all
+     * Spawn the process without waiting for its completion, redirect STDIN to
+     * `/dev/null`, and redirect STDOUT and STDERR to a file. Use `posix_spawn()`, closes all
      * non-STDIO file descriptors. The process will be terminated when the child
      * process handle gets dropped.
      */

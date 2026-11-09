@@ -17,6 +17,7 @@
 #include "process.h"
 
 #include <cassert>
+#include <cerrno>
 #include <iostream>
 
 #include <dlfcn.h>
@@ -252,7 +253,8 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     // We'll read the results from a pipe. The child writes to the second pipe,
     // we'll read from the first one.
     int stdout_pipe_fds[2];
-    assert(pipe(stdout_pipe_fds) == 0);
+    [[maybe_unused]] const int pipe_result = pipe(stdout_pipe_fds);
+    assert(pipe_result == 0);
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
@@ -269,6 +271,7 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
 
     close(stdout_pipe_fds[1]);
     if (result == 2) {
@@ -287,17 +290,29 @@ Process::StringResult Process::spawn_get_stdout_line() const {
         fgets(output.data(), output.size(), output_pipe_stream);
     fclose(output_pipe_stream);
 
+    // `fgets()` returns the line feed, so we'll get rid of that
+    std::string output_str(output.data());
+    if (!output_str.empty() && output_str.back() == '\n') {
+        output_str.pop_back();
+    }
+
+    // If the host ignores `SIGCHLD`, then the child gets reaped automatically
+    // and `waitpid()` fails with `ECHILD`. We can't know the exit status in
+    // that case, so we'll go by whether the command printed anything.
     int status = 0;
-    assert(waitpid(child_pid, &status, 0) > 0);
+    const pid_t wait_result = waitpid(child_pid, &status, 0);
+    if (wait_result < 0) {
+        assert(errno == ECHILD);
+        if (output_str.empty()) {
+            return Process::CommandNotFound{};
+        } else {
+            return output_str;
+        }
+    }
+
     if (!WIFEXITED(status) || WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
-        // `fgets()` returns the line feed, so we'll get rid of that
-        std::string output_str(output.data());
-        if (output_str.back() == '\n') {
-            output_str.pop_back();
-        }
-
         return output_str;
     }
 }
@@ -315,8 +330,14 @@ Process::StatusResult Process::spawn_get_status() const {
         return std::error_code(result, std::system_category());
     }
 
+    // See `spawn_get_stdout_line()`. Without the exit status there's nothing
+    // meaningful we can return here, so we'll return the error instead.
     int status = 0;
-    assert(waitpid(child_pid, &status, 0) > 0);
+    const pid_t wait_result = waitpid(child_pid, &status, 0);
+    if (wait_result < 0) {
+        return std::error_code(errno, std::system_category());
+    }
+
     if (!WIFEXITED(status) || WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
@@ -378,8 +399,9 @@ Process::HandleResult Process::spawn_child_piped(
     // and the child process will write to the second elements.
     int stdout_pipe_fds[2];
     int stderr_pipe_fds[2];
-    assert(pipe(stdout_pipe_fds) == 0);
-    assert(pipe(stderr_pipe_fds) == 0);
+    [[maybe_unused]] const int stdout_pipe_result = pipe(stdout_pipe_fds);
+    [[maybe_unused]] const int stderr_pipe_result = pipe(stderr_pipe_fds);
+    assert(stdout_pipe_result == 0 && stderr_pipe_result == 0);
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
@@ -390,12 +412,18 @@ Process::HandleResult Process::spawn_child_piped(
                                      STDOUT_FILENO);
     posix_spawn_file_actions_adddup2(&actions, stderr_pipe_fds[1],
                                      STDERR_FILENO);
+    // Some Wine builds crash during startup when STDIN is closed, which can
+    // happen when the host itself was started without a STDIN. The Wine host
+    // never reads from STDIN, so we'll always give it `/dev/null` instead.
+    posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null",
+                                     O_RDONLY, 0);
     // We'll close the four pipe fds along with the rest of the file descriptors
     close_non_stdio_file_descriptors(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
 
     // We'll assign the read ends of the pipes to the Asio stream descriptors
     // passed to this function, even if launching the process failed.
@@ -416,8 +444,12 @@ Process::HandleResult Process::spawn_child_piped(
     // exist, but the specification says that it should return a PID that exits
     // with status 127 instead. I have no idea how we'd check for that without
     // waiting here though, so this check may not work
+    // This fails with `ECHILD` if the host ignores `SIGCHLD` and the child
+    // already exited, in which case we can't check the exit status
     int status = 0;
-    assert(waitpid(child_pid, &status, WNOHANG) >= 0);
+    [[maybe_unused]] const pid_t wait_result =
+        waitpid(child_pid, &status, WNOHANG);
+    assert(wait_result >= 0 || errno == ECHILD);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
@@ -437,19 +469,29 @@ Process::HandleResult Process::spawn_child_redirected(
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, filename.c_str(),
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
+    // Some Wine builds crash during startup when STDIN is closed, which can
+    // happen when the host itself was started without a STDIN. The Wine host
+    // never reads from STDIN, so we'll always give it `/dev/null` instead.
+    posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null",
+                                     O_RDONLY, 0);
     close_non_stdio_file_descriptors(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
+    posix_spawn_file_actions_destroy(&actions);
     if (result == 2) {
         return Process::CommandNotFound{};
     } else if (result != 0) {
         return std::error_code(result, std::system_category());
     }
 
+    // This fails with `ECHILD` if the host ignores `SIGCHLD` and the child
+    // already exited, in which case we can't check the exit status
     int status = 0;
-    assert(waitpid(child_pid, &status, WNOHANG) >= 0);
+    [[maybe_unused]] const pid_t wait_result =
+        waitpid(child_pid, &status, WNOHANG);
+    assert(wait_result >= 0 || errno == ECHILD);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 127) {
         return Process::CommandNotFound{};
     } else {
