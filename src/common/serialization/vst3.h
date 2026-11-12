@@ -31,6 +31,8 @@
 #include "vst3/plug-frame-proxy.h"
 #include "vst3/plug-view-proxy.h"
 #include "vst3/plugin-factory-proxy.h"
+#include "vst3/plugin-factory/ara-main-factory.h"
+#include "vst3/ara-document-controller.h"
 #include "vst3/plugin-proxy.h"
 
 // Event handling for our VST3 plugins works slightly different from how we
@@ -135,7 +137,62 @@ using Vst3ControlRequest =
                  YaUnitInfo::SelectUnit,
                  YaUnitInfo::GetUnitByBus,
                  YaUnitInfo::SetUnitProgramData,
-                 YaXmlRepresentationController::GetXmlRepresentationStream>;
+                 YaXmlRepresentationController::GetXmlRepresentationStream
+#ifdef WITH_ARA
+                 ,
+                 YaPlugInEntryPoint::GetFactory,
+                 YaPlugInEntryPoint::BindToDocumentControllerWithRoles,
+                 YaMainFactory::Construct,
+                 YaAra::CreateDocumentController,
+                 YaAra::DestroyDocumentController,
+                 YaAra::BeginEditing,
+                 YaAra::EndEditing,
+                 YaAra::NotifyModelUpdates,
+                 YaAra::UpdateDocumentProperties,
+                 YaAra::AddMusicalContext,
+                 YaAra::UpdateMusicalContextProperties,
+                 YaAra::UpdateMusicalContextContent,
+                 YaAra::RemoveMusicalContext,
+                 YaAra::AddRegionSequence,
+                 YaAra::UpdateRegionSequenceProperties,
+                 YaAra::RemoveRegionSequence,
+                 YaAra::AddAudioSource,
+                 YaAra::UpdateAudioSourceProperties,
+                 YaAra::UpdateAudioSourceContent,
+                 YaAra::EnableAudioSourceSamplesAccess,
+                 YaAra::DeactivateAndUnregisterAudioSource,
+                 YaAra::RemoveAudioSource,
+                 YaAra::AddAudioModification,
+                 YaAra::CloneAudioModification,
+                 YaAra::UpdateAudioModificationProperties,
+                 YaAra::DeactivateAndUnregisterAudioModification,
+                 YaAra::RemoveAudioModification,
+                 YaAra::AddPlaybackRegion,
+                 YaAra::UpdatePlaybackRegionProperties,
+                 YaAra::RemovePlaybackRegion,
+                 YaAra::RequestAudioSourceContentAnalysis,
+                 YaAra::IsAudioSourceContentAvailableDC,
+                 YaAra::GetAudioSourceContentGradeDC,
+                 YaAra::CreateAudioSourceContentReaderDC,
+                 YaAra::GetContentReaderEventCountDC,
+                 YaAra::GetContentReaderDataForEventDC,
+                 YaAra::DestroyContentReaderDC,
+                 YaAra::GetPlaybackRegionHeadAndTailTime,
+                 YaAra::StoreObjectsToArchive,
+                 YaAra::RestoreObjectsFromArchive,
+                 YaAra::StoreDocumentToArchive,
+                 YaAra::BeginRestoringDocumentFromArchive,
+                 YaAra::EndRestoringDocumentFromArchive,
+                 YaAra::PluginExtension::PlaybackRendererAddRegion,
+                 YaAra::PluginExtension::PlaybackRendererRemoveRegion,
+                 YaAra::PluginExtension::EditorRendererAddRegion,
+                 YaAra::PluginExtension::EditorRendererRemoveRegion,
+                 YaAra::PluginExtension::EditorRendererAddRegionSequence,
+                 YaAra::PluginExtension::EditorRendererRemoveRegionSequence,
+                 YaAra::PluginExtension::EditorViewNotifySelection,
+                 YaAra::PluginExtension::EditorViewNotifyHideRegionSequences
+#endif
+                 >;
 
 template <typename S>
 void serialize(S& s, Vst3ControlRequest& payload) {
@@ -271,7 +328,39 @@ using Vst3CallbackRequest =
                  YaProgress::Finish,
                  YaUnitHandler::NotifyUnitSelection,
                  YaUnitHandler::NotifyProgramListChange,
-                 YaUnitHandler2::NotifyUnitByBusChange>;
+                 YaUnitHandler2::NotifyUnitByBusChange
+#ifdef WITH_ARA
+                 ,
+                 YaAra::HostCallback::GetArchiveSize,
+                 YaAra::HostCallback::ReadBytesFromArchive,
+                 YaAra::HostCallback::WriteBytesToArchive,
+                 YaAra::HostCallback::NotifyDocumentArchivingProgress,
+                 YaAra::HostCallback::NotifyDocumentUnarchivingProgress,
+                 YaAra::HostCallback::GetDocumentArchiveID,
+                 YaAra::HostCallback::IsMusicalContextContentAvailable,
+                 YaAra::HostCallback::GetMusicalContextContentGrade,
+                 YaAra::HostCallback::CreateMusicalContextContentReader,
+                 YaAra::HostCallback::IsAudioSourceContentAvailable,
+                 YaAra::HostCallback::GetAudioSourceContentGrade,
+                 YaAra::HostCallback::CreateAudioSourceContentReader,
+                 YaAra::HostCallback::GetContentReaderEventCount,
+                 YaAra::HostCallback::GetContentReaderDataForEvent,
+                 YaAra::HostCallback::DestroyContentReader,
+                 YaAra::HostCallback::NotifyAudioSourceAnalysisProgress,
+                 YaAra::HostCallback::NotifyAudioSourceContentChanged,
+                 YaAra::HostCallback::NotifyAudioModificationContentChanged,
+                 YaAra::HostCallback::NotifyPlaybackRegionContentChanged,
+                 YaAra::HostCallback::NotifyDocumentDataChanged,
+                 YaAra::HostCallback::RequestStartPlayback,
+                 YaAra::HostCallback::RequestStopPlayback,
+                 YaAra::HostCallback::RequestSetPlaybackPosition,
+                 YaAra::HostCallback::RequestSetCycleRange,
+                 YaAra::HostCallback::RequestEnableCycle,
+                 YaAra::CreateAudioReader,
+                 YaAra::DestroyAudioReader,
+                 YaAra::ReadAudioSamples
+#endif
+                 >;
 
 template <typename S>
 void serialize(S& s, Vst3CallbackRequest& payload) {

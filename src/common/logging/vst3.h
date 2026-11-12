@@ -188,6 +188,15 @@ class Vst3Logger {
         bool is_host_plugin,
         const YaXmlRepresentationController::GetXmlRepresentationStream&);
 
+#ifdef WITH_ARA
+    bool log_request(bool is_host_plugin,
+                     const YaPlugInEntryPoint::GetFactory&);
+    bool log_request(
+        bool is_host_plugin,
+        const YaPlugInEntryPoint::BindToDocumentControllerWithRoles&);
+    bool log_request(bool is_host_plugin, const YaMainFactory::Construct&);
+#endif
+
     // Audio processor control messages
     bool log_request(bool is_host_plugin,
                      const YaAudioProcessor::SetBusArrangements&);
@@ -215,6 +224,175 @@ class Vst3Logger {
     bool log_request(bool is_host_plugin, const YaComponent::SetActive&);
     bool log_request(bool is_host_plugin,
                      const YaPrefetchableSupport::GetPrefetchableSupport&);
+
+#ifdef WITH_ARA
+    // ARA document controller control messages
+    bool log_request(bool is_host_plugin,
+                     const YaAra::CreateDocumentController&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::DestroyDocumentController&);
+    bool log_request(bool is_host_plugin, const YaAra::BeginEditing&);
+    bool log_request(bool is_host_plugin, const YaAra::EndEditing&);
+    bool log_request(bool is_host_plugin, const YaAra::NotifyModelUpdates&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::UpdateDocumentProperties&);
+    bool log_request(bool is_host_plugin, const YaAra::AddMusicalContext&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::UpdateMusicalContextProperties&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::UpdateMusicalContextContent&);
+    bool log_request(bool is_host_plugin, const YaAra::RemoveMusicalContext&);
+    bool log_request(bool is_host_plugin, const YaAra::AddRegionSequence&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::UpdateRegionSequenceProperties&);
+    bool log_request(bool is_host_plugin, const YaAra::RemoveRegionSequence&);
+    bool log_request(bool is_host_plugin, const YaAra::AddAudioSource&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::UpdateAudioSourceProperties&);
+    bool log_request(bool is_host_plugin, const YaAra::UpdateAudioSourceContent&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::EnableAudioSourceSamplesAccess&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::DeactivateAndUnregisterAudioSource&);
+    bool log_request(bool is_host_plugin, const YaAra::RemoveAudioSource&);
+    bool log_request(bool is_host_plugin, const YaAra::AddAudioModification&);
+    bool log_request(bool is_host_plugin, const YaAra::CloneAudioModification&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::UpdateAudioModificationProperties&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::DeactivateAndUnregisterAudioModification&);
+    bool log_request(bool is_host_plugin, const YaAra::RemoveAudioModification&);
+    bool log_request(bool is_host_plugin, const YaAra::AddPlaybackRegion&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::UpdatePlaybackRegionProperties&);
+    bool log_request(bool is_host_plugin, const YaAra::RemovePlaybackRegion&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::RequestAudioSourceContentAnalysis&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::GetPlaybackRegionHeadAndTailTime&);
+    bool log_request(bool is_host_plugin, const YaAra::StoreObjectsToArchive&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::RestoreObjectsFromArchive&);
+    bool log_request(bool is_host_plugin, const YaAra::StoreDocumentToArchive&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::BeginRestoringDocumentFromArchive&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::EndRestoringDocumentFromArchive&);
+
+    bool log_request(bool is_host_plugin,
+                     const YaAra::IsAudioSourceContentAvailableDC&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::GetAudioSourceContentGradeDC&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::CreateAudioSourceContentReaderDC&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::GetContentReaderEventCountDC&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::GetContentReaderDataForEventDC&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::DestroyContentReaderDC&);
+
+    // ARA response types
+    void log_response(bool is_host_plugin,
+                      const YaAra::GetPlaybackRegionHeadAndTailTime::Response&);
+    void log_response(bool is_host_plugin,
+                      const std::variant<uint64_t, UniversalTResult>&);
+    void log_response(bool is_host_plugin,
+                      const std::variant<int32_t, UniversalTResult>&);
+
+    // ARA host callback request types (plugin -> host)
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::GetArchiveSize&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::ReadBytesFromArchive&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::WriteBytesToArchive&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::NotifyDocumentArchivingProgress&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::NotifyDocumentUnarchivingProgress&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::GetDocumentArchiveID&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::IsMusicalContextContentAvailable&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::GetMusicalContextContentGrade&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::CreateMusicalContextContentReader&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::IsAudioSourceContentAvailable&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::GetAudioSourceContentGrade&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::CreateAudioSourceContentReader&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::GetContentReaderEventCount&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::GetContentReaderDataForEvent&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::DestroyContentReader&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::NotifyAudioSourceAnalysisProgress&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::NotifyAudioSourceContentChanged&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::NotifyAudioModificationContentChanged&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::NotifyPlaybackRegionContentChanged&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::NotifyDocumentDataChanged&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::RequestStartPlayback&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::RequestStopPlayback&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::RequestSetPlaybackPosition&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::RequestSetCycleRange&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::HostCallback::RequestEnableCycle&);
+
+    // ARA host callback response types
+    void log_response(bool is_host_plugin,
+                      const YaAra::HostCallback::HandleResponse&);
+    void log_response(bool is_host_plugin,
+                      const YaAra::HostCallback::Int32Response&);
+    void log_response(bool is_host_plugin,
+                      const YaAra::HostCallback::BytesResponse&);
+    void log_response(bool is_host_plugin,
+                      const YaAra::HostCallback::StringResponse&);
+
+    // ARA audio sample transfer (plugin -> host via shm, in Vst3CallbackRequest)
+    bool log_request(bool is_host_plugin, const YaAra::CreateAudioReader&);
+    bool log_request(bool is_host_plugin, const YaAra::DestroyAudioReader&);
+    bool log_request(bool is_host_plugin, const YaAra::ReadAudioSamples&);
+    void log_response(bool is_host_plugin,
+                      const YaAra::CreateAudioReader::Response&);
+    void log_response(bool is_host_plugin,
+                      const YaAra::ReadAudioSamples::Response&);
+
+    // ARA plugin extension interface calls (host -> plugin)
+    bool log_request(bool is_host_plugin,
+                     const YaAra::PluginExtension::PlaybackRendererAddRegion&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::PluginExtension::PlaybackRendererRemoveRegion&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::PluginExtension::EditorRendererAddRegion&);
+    bool log_request(bool is_host_plugin,
+                     const YaAra::PluginExtension::EditorRendererRemoveRegion&);
+    bool log_request(
+        bool is_host_plugin,
+        const YaAra::PluginExtension::EditorRendererAddRegionSequence&);
+    bool log_request(
+        bool is_host_plugin,
+        const YaAra::PluginExtension::EditorRendererRemoveRegionSequence&);
+    bool log_request(
+        bool is_host_plugin,
+        const YaAra::PluginExtension::EditorViewNotifySelection&);
+    bool log_request(
+        bool is_host_plugin,
+        const YaAra::PluginExtension::EditorViewNotifyHideRegionSequences&);
+#endif  // WITH_ARA
 
     // Main thread callbacks
     bool log_request(bool is_host_plugin,
@@ -323,6 +501,15 @@ class Vst3Logger {
     void log_response(bool is_host_plugin,
                       const YaXmlRepresentationController::
                           GetXmlRepresentationStreamResponse&);
+
+#ifdef WITH_ARA
+    void log_response(
+        bool is_host_plugin,
+        const std::variant<YaAraFactory, UniversalTResult>&);
+    void log_response(
+        bool is_host_plugin,
+        const std::variant<YaAraPlugInExtensionInstance, UniversalTResult>&);
+#endif
 
     // Audio processor control message responses
     void log_response(bool is_host_plugin,

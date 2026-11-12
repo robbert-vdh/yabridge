@@ -27,6 +27,9 @@
 
 // Forward declarations
 class Vst3PluginProxyImpl;
+#ifdef WITH_ARA
+class AraDocumentControllerProxy;
+#endif
 
 /**
  * This handles the communication between the native host and a VST3 plugin
@@ -196,6 +199,34 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     Vst3Logger logger_;
 
+#ifdef WITH_ARA
+    /**
+     * Create a document controller proxy for the given DC ID and store it.
+     * Returns a pointer to the stored proxy's `ARADocumentControllerInstance`.
+     * The proxy is owned by this bridge for the lifetime of the ARA session.
+     *
+     * The `host_instance` pointer must remain valid and unmodified until the
+     * corresponding `unregister_ara_document_controller()` call, as the proxy
+     * dereferences it during host-callback handling.
+     */
+    const ARA::ARADocumentControllerInstance* register_ara_document_controller(
+        native_size_t ara_dc_id,
+        const ARA::ARADocumentControllerHostInstance* host_instance,
+        const ARA::ARAFactory* factory = nullptr);
+
+    /**
+     * Remove and destroy the document controller proxy for the given DC ID.
+     */
+    void unregister_ara_document_controller(native_size_t ara_dc_id);
+
+    /**
+     * Find the registered AraDocumentControllerProxy whose address matches
+     * the given ARADocumentControllerRef. Returns nullptr if not found.
+     */
+    std::shared_ptr<AraDocumentControllerProxy>
+    find_ara_document_controller(ARA::ARADocumentControllerRef ref) noexcept;
+#endif
+
    private:
     /**
      * Handles callbacks from the plugin to the host over the
@@ -225,6 +256,13 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     std::unordered_map<size_t, std::reference_wrapper<Vst3PluginProxyImpl>>
         plugin_proxies_;
+
+#ifdef WITH_ARA
+    std::unordered_map<native_size_t,
+                       std::shared_ptr<AraDocumentControllerProxy>>
+        ara_document_controllers_;
+    std::mutex ara_document_controllers_mutex_;
+#endif
 
     /**
      * In theory all object handling is safe iff the host also doesn't do
