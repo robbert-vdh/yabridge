@@ -48,11 +48,25 @@ Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
 }
 
 Vst3PluginProxyImpl::~Vst3PluginProxyImpl() noexcept {
-    // NOTE: This can actually throw (e.g. out of memory or the socket got
-    //       closed). But if that were to happen, then we wouldn't be able to
-    //       recover from it anyways.
-    bridge_.send_message(
-        Vst3PluginProxy::Destruct{.instance_id = instance_id()});
+    // NOTE: This can throw -- typically because the socket is closed, when the
+    //       Wine host has already exited. This destructor is `noexcept`, so an
+    //       escaping exception is not an error the host can handle: it is
+    //       `std::terminate()` taking the host application down with it.
+    //
+    //       A host that unloads a VST3 module once nothing references it ends
+    //       the Wine host while proxies may still be destructed afterwards,
+    //       and the ordering is not the host's to control. A goodbye message
+    //       that cannot be delivered because the recipient has already exited
+    //       is not worth a process.
+    try {
+        bridge_.send_message(
+            Vst3PluginProxy::Destruct{.instance_id = instance_id()});
+    } catch (const std::exception&) {
+        // The Wine host is gone. Nothing to tell it, and nothing to do.
+    }
+
+    // Always, including after the send failed: this is the plugin side's own
+    // bookkeeping, and the throw above used to skip it.
     bridge_.unregister_plugin_proxy(*this);
 }
 
