@@ -252,8 +252,8 @@ void Vst3Bridge::run() {
                 //       state unless this function is run from the GUI thread
                 // NOTE: This also requires mutual recursion because REAPER will
                 //       call `getState()` while opening a popup menu
-                const tresult result =
-                    do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                const tresult result = do_mutual_recursion_on_gui_thread(
+                    [&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
@@ -267,7 +267,8 @@ void Vst3Bridge::run() {
                             return instance.interfaces.edit_controller
                                 ->getState(&request.state);
                         }
-                    });
+                    },
+                    true);
 
                 return Vst3PluginProxy::GetStateResponse{
                     .result = result, .state = std::move(request.state)};
@@ -995,8 +996,8 @@ void Vst3Bridge::run() {
                 // audio processing gets initialized at the same time as this
                 // function, not sure why.
                 Steinberg::ViewRect size{};
-                const tresult result =
-                    do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                const tresult result = do_mutual_recursion_on_gui_thread(
+                    [&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.owner_instance_id);
                         std::lock_guard lock(instance.get_size_mutex);
@@ -1017,7 +1018,8 @@ void Vst3Bridge::run() {
                             size = instance.last_set_size;
                         }
                         return result;
-                    });
+                    },
+                    true);
 
                 return YaPlugView::GetSizeResponse{.result = result,
                                                    .size = std::move(size)};
@@ -1032,39 +1034,44 @@ void Vst3Bridge::run() {
                 //       code on the same thread that's currently waiting for a
                 //       response to the message it sent. See the docstring of
                 //       this function for more information on how this works.
-                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
-                    const auto& [instance, _] =
-                        get_instance(request.owner_instance_id);
+                return do_mutual_recursion_on_gui_thread(
+                    [&]() -> tresult {
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
 
-                    const tresult result =
-                        instance.plug_view_instance->plug_view->onSize(
-                            &request.new_size);
+                        const tresult result =
+                            instance.plug_view_instance->plug_view->onSize(
+                                &request.new_size);
 
-                    // Also resize our wrapper window if the plugin agreed to
-                    // the new size
-                    // NOTE: MeldaProduction plugins return `kResultFalse` even
-                    //       if they accept the resize, so we shouldn't check
-                    //       the result here
-                    if (instance.editor) {
-                        instance.editor->resize(request.new_size.getWidth(),
-                                                request.new_size.getHeight());
-                    }
+                        // Also resize our wrapper window if the plugin agreed to
+                        // the new size
+                        // NOTE: MeldaProduction plugins return `kResultFalse` even
+                        //       if they accept the resize, so we shouldn't check
+                        //       the result here
+                        if (instance.editor) {
+                            instance.editor->resize(
+                                request.new_size.getWidth(),
+                                request.new_size.getHeight());
+                        }
 
-                    instance.last_set_size = request.new_size;
+                        instance.last_set_size = request.new_size;
 
-                    return result;
-                });
+                        return result;
+                    },
+                    true);
             },
             [&](const YaPlugView::OnFocus& request)
                 -> YaPlugView::OnFocus::Response {
                 return main_context_
-                    .run_in_context([&]() -> tresult {
-                        const auto& [instance, _] =
-                            get_instance(request.owner_instance_id);
+                    .run_in_context(
+                        [&]() -> tresult {
+                            const auto& [instance, _] =
+                                get_instance(request.owner_instance_id);
 
-                        return instance.plug_view_instance->plug_view->onFocus(
-                            request.state);
-                    })
+                            return instance.plug_view_instance->plug_view
+                                ->onFocus(request.state);
+                        },
+                        true)
                     .get();
             },
             [&](YaPlugView::SetFrame& request)
@@ -1101,23 +1108,27 @@ void Vst3Bridge::run() {
                 -> YaPlugView::CanResize::Response {
                 // To prevent weird behaviour we'll perform all size related
                 // functions from the GUI thread, including this one
-                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
-                    const auto& [instance, _] =
-                        get_instance(request.owner_instance_id);
+                return do_mutual_recursion_on_gui_thread(
+                    [&]() -> tresult {
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
 
-                    return instance.plug_view_instance->plug_view->canResize();
-                });
+                        return instance.plug_view_instance->plug_view
+                            ->canResize();
+                    },
+                    true);
             },
             [&](YaPlugView::CheckSizeConstraint& request)
                 -> YaPlugView::CheckSizeConstraint::Response {
-                const tresult result =
-                    do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                const tresult result = do_mutual_recursion_on_gui_thread(
+                    [&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.owner_instance_id);
 
                         return instance.plug_view_instance->plug_view
                             ->checkSizeConstraint(&request.rect);
-                    });
+                    },
+                    true);
 
                 return YaPlugView::CheckSizeConstraintResponse{
                     .result = result, .updated_rect = std::move(request.rect)};
