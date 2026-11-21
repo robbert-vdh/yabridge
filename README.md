@@ -941,7 +941,7 @@ To debug the plugin, you can just attach gdb to the host. Debugging the Wine
 plugin host is a bit trickier. Wine comes with a GDB proxy for winedbg, but it
 requires a little bit of additional setup and it expects the command line
 arguments to be a valid Win32 command line. You'll also need to launch winedbg
-in a seperate detached terminal emulator so it doesn't terminate together with
+in a separate detached terminal emulator so it doesn't terminate together with
 the plugin, and winedbg can be a bit picky about the arguments it accepts. I've
 already set this up behind a feature flag for use in KDE Plasma. Other desktop
 environments and window managers will require some slight modifications in
