@@ -723,6 +723,12 @@ plugin-specific issues.
   case, you may also want to use `YABRIDGE_TEMP_DIR` to choose a different
   directory for yabridge to store its sockets and other temporary files in.
 
+- Yabridge works around popup menus in JUCE plugins, such as those in
+  _Toontrack_'s plugins, closing again right after they open by keeping Wine
+  from handing those menus to the window manager. If this somehow causes issues
+  with a plugin's popup windows, then you can set the `YABRIDGE_NO_POPUP_FIX`
+  environment variable to disable this behavior.
+
 ## Performance tuning
 
 Running Windows plugins under Wine should have a minimal performance overhead,

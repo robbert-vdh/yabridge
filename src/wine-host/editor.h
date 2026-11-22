@@ -126,6 +126,32 @@ class DeferredWin32Window {
 };
 
 /**
+ * Prevents Wine from handing plugin popup windows (like JUCE's popup menus) to
+ * the window manager, for as long as at least one instance exists. JUCE creates
+ * its popup menus with `WS_POPUP | WS_SYSMENU`, and Wine treats popup windows
+ * with a system menu as managed top level windows instead of override-redirect
+ * popups. Window managers like KWin then treat the menu as a regular window,
+ * which with Wine 10.x and later causes the menu to close again right after
+ * it opens. We strip `WS_SYSMENU` from captionless, non-resizable top level
+ * popup windows created on the GUI thread so Wine maps them as override-redirect
+ * windows, just like a native application's menus. This can be disabled by
+ * setting `YABRIDGE_NO_POPUP_FIX`.
+ */
+class PopupStyleFixer {
+   public:
+    explicit PopupStyleFixer(Logger& logger);
+    ~PopupStyleFixer() noexcept;
+
+    PopupStyleFixer(const PopupStyleFixer&) = delete;
+    PopupStyleFixer& operator=(const PopupStyleFixer&) = delete;
+    PopupStyleFixer(PopupStyleFixer&& other) noexcept;
+    PopupStyleFixer& operator=(PopupStyleFixer&& other) noexcept;
+
+   private:
+    bool active_ = false;
+};
+
+/**
  * TODO: This documentation needs to be updated with the recent changes to how
  *       embedding is handled.
  *
@@ -442,4 +468,10 @@ class Editor {
      * `supports_ewmh_active_window()`.
      */
     mutable std::optional<bool> supports_ewmh_active_window_cache_;
+
+    /**
+     * Keeps plugin popup windows, like JUCE's popup menus, from being managed
+     * by the window manager while this editor is open.
+     */
+    PopupStyleFixer popup_style_fixer_;
 };
