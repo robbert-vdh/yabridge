@@ -36,6 +36,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#531](https://github.com/robbert-vdh/yabridge/pull/531)) This was easy to
   trigger in **REAPER** by quickly switching between plugins in the FX chain
   window.
+- Fixed popup menus in JUCE-based plugins like **Toontrack Superior Drummer 3**
+  and **EZdrummer 3** closing again immediately after opening with Wine 10.x
+  and later ([#521](https://github.com/robbert-vdh/yabridge/issues/521)). Wine
+  handed these menus to the window manager as regular windows because JUCE
+  creates them with a system menu. Yabridge now removes that system menu style
+  from captionless popup windows while an editor is open so Wine treats them as
+  ordinary popup menus. This can be disabled by setting the
+  `YABRIDGE_NO_POPUP_FIX` environment variable.
 - A couple more VST3 functions are now called from the UI thread. This should
   help with compatibility with plugins using modern VSTGUI versions, such as
   _Serum 2_.
